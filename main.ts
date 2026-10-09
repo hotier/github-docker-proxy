@@ -2,9 +2,13 @@
 // 免费额度：100万请求/天，128MB内存，无CPU时间限制
 
 // 使用 Deno.serve() (Deno Deploy 标准方式)
-// 不再需要导入 std/http/server.ts
+// 支持本地开发：deno task dev 或 deno run --allow-net --allow-env main.ts
 
 // ==================== 配置区 ====================
+
+// 本地开发端口（Deno Deploy 会自动分配端口，本地默认 8000）
+const PORT = parseInt(Deno.env.get("PORT") || "8000");
+
 // 设置访问密码（可选），环境变量 PROXY_PASSWORD
 // 设置后所有请求需要 Basic Auth: proxy:<password>
 
@@ -34,7 +38,7 @@ const DOCKER_AUTH = "https://auth.docker.io";
 
 // ==================== 主入口 ====================
 
-Deno.serve(async (req: Request) => {
+Deno.serve({ port: PORT }, async (req: Request) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
@@ -1298,3 +1302,20 @@ async function diagnosticEndpoint(): Promise<Response> {
 
   return jsonResponse(results);
 }
+
+// ==================== 启动信息 ====================
+
+console.log(`🚀 GitHub & Docker Proxy`);
+console.log(`📡 Listening on http://localhost:${PORT}`);
+console.log(`🌍 Environment: ${Deno.env.get("DENO_DEPLOYMENT_ID") ? "Deno Deploy" : "Local"}`);
+console.log(`\n📋 Available endpoints:`);
+console.log(`  /gh/*          → github.com`);
+console.log(`  /ghraw/*       → raw.githubusercontent.com`);
+console.log(`  /v2/*          → registry-1.docker.io`);
+console.log(`  /ghcr/*        → ghcr.io`);
+console.log(`  /health        → Health check`);
+console.log(`  /diag          → Diagnostic tests`);
+console.log(`\n💡 Tips:`);
+console.log(`  - Press Ctrl+C to stop`);
+console.log(`  - Set PORT env to change port (default: 8000)`);
+console.log(`  - Set PROXY_PASSWORD env to enable auth\n`);

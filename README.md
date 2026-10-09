@@ -10,8 +10,55 @@
 - ✅ Basic Auth 鉴权（可选）
 - ✅ 自动处理 Docker Hub Token
 - ✅ 免费额度：100万请求/天
+- ✅ 现代化暗色主题首页
+- ✅ 交互式 URL 转换器
 
-## 快速部署
+## 快速开始
+
+### 本地开发
+
+```bash
+# 克隆项目
+git clone https://github.com/hotier/github-docker-proxy.git
+cd github-docker-proxy
+
+# 运行开发服务器（默认端口 8000）
+deno task dev
+
+# 或带热重载
+deno task dev:watch
+
+# 自定义端口
+PORT=3000 deno task dev
+```
+
+访问 http://localhost:8000 查看首页。
+
+### 运行测试
+
+```bash
+# 运行所有测试（需要服务器在后台运行）
+deno task test
+
+# 或先启动服务器，再运行测试
+deno task dev &
+deno task test
+```
+
+### 代码检查
+
+```bash
+# TypeScript 类型检查
+deno task check
+
+# 代码格式化
+deno task fmt
+
+# Lint 检查
+deno task lint
+```
+
+## 部署到 Deno Deploy
 
 ### 方式一：GitHub 自动部署（推荐）
 
@@ -34,19 +81,7 @@ deno install --allow-all --no-check -r -f https://deno.land/x/deploy/deployctl.t
 deployctl login
 
 # 部署
-deployctl deploy --project=your-project-name main.ts
-```
-
-### 方式三：使用你的项目 ID 部署
-
-如果你已经有项目 ID（如 `ddp_IdNnvTdsWOQHjL8xTXmTqKV12dapS4cgvpae`）：
-
-```bash
-# 设置环境变量
-export DENO_DEPLOY_TOKEN=ddp_IdNnvTdsWOQHjL8xTXmTqKV12dapS4cgvpae
-
-# 直接部署到指定项目
-deployctl deploy --project=your-project-name --token=$DENO_DEPLOY_TOKEN main.ts
+deployoctl deploy --project=your-project-name main.ts
 ```
 
 ## 环境变量配置
@@ -58,6 +93,8 @@ deployctl deploy --project=your-project-name --token=$DENO_DEPLOY_TOKEN main.ts
 | `PROXY_PASSWORD` | 访问密码（设置后需要 Basic Auth） | 否 |
 | `DOCKER_HUB_USERNAME` | Docker Hub 账号（提升限速） | 否 |
 | `DOCKER_HUB_PASSWORD` | Docker Hub 密码或 Access Token | 否 |
+
+本地开发时，复制 `.env.example` 为 `.env` 并填写。
 
 ## 使用方式
 
@@ -105,11 +142,50 @@ docker pull xxx.deno.dev/gcr.io/project/image:tag
 | `/ghraw/` | raw.githubusercontent.com |
 | `/codeload/` | codeload.github.com |
 | `/objects/` | objects.githubusercontent.com |
+| `/release-assets/` | release-assets.githubusercontent.com |
+| `/api.github.com/` | api.github.com |
 | `/v2/` | registry-1.docker.io (Docker Hub) |
 | `/ghcr/` | ghcr.io |
 | `/gcr/` | gcr.io |
 | `/k8s/` | registry.k8s.io |
 | `/quay/` | quay.io |
+
+## 项目结构
+
+```
+github-docker-proxy/
+├── main.ts              # 主入口（包含所有逻辑）
+├── deno.json            # Deno 配置和任务
+├── tests/
+│   └── main_test.ts     # 测试文件
+├── .vscode/             # VS Code 配置
+│   ├── launch.json      # 调试配置
+│   ├── settings.json    # Deno 设置
+│   └── extensions.json  # 推荐扩展
+├── .env.example         # 环境变量示例
+├── .gitignore           # Git 忽略
+└── README.md            # 本文档
+```
+
+## 开发工作流
+
+```bash
+# 1. 启动开发服务器（热重载）
+deno task dev:watch
+
+# 2. 在另一个终端运行测试
+deno task test
+
+# 3. 提交前检查
+deno task check
+deno task fmt
+deno task lint
+
+# 4. 提交并推送（自动部署到 Deno Deploy）
+git add .
+git commit -m "feat: your feature"
+git push
+```
 
 ## 注意事项
 
@@ -125,6 +201,11 @@ docker pull xxx.deno.dev/gcr.io/project/image:tag
 curl https://xxx.deno.dev/health
 ```
 
+### 诊断外部连接
+```bash
+curl https://xxx.deno.dev/diag
+```
+
 ### 测试 GitHub 代理
 ```bash
 curl -I https://xxx.deno.dev/gh/octocat/Hello-World
@@ -135,6 +216,14 @@ curl -I https://xxx.deno.dev/gh/octocat/Hello-World
 curl -I https://xxx.deno.dev/v2/
 # 应返回 401（需要 token）或 200
 ```
+
+## 技术栈
+
+- **运行时**: Deno
+- **部署**: Deno Deploy（边缘网络）
+- **语言**: TypeScript
+- **测试**: Deno Test
+- **代码风格**: Deno Lint + Deno Fmt
 
 ## 许可证
 

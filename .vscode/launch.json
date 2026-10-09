@@ -1,0 +1,64 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Deno: Run",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "deno",
+      "runtimeArgs": [
+        "run",
+        "--allow-net",
+        "--allow-env",
+        "--allow-read",
+        "main.ts"
+      ],
+      "outputCapture": "std",
+      "attachSimplePort": 8000
+    },
+    {
+      "name": "Deno: Watch",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "deno",
+      "runtimeArgs": [
+        "run",
+        "--allow-net",
+        "--allow-env",
+        "--allow-read",
+        "--watch",
+        "main.ts"
+      ],
+      "outputCapture": "std",
+      "attachSimplePort": 8000
+    },
+    {
+      "name": "Deno: Test",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "deno",
+      "runtimeArgs": [
+        "test",
+        "--allow-net",
+        "--allow-env",
+        "--allow-read"
+      ],
+      "outputCapture": "std"
+    },
+    {
+      "name": "Deno: Check",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "deno",
+      "runtimeArgs": [
+        "check",
+        "main.ts"
+      ],
+      "outputCapture": "std"
+    }
+  ]
+}

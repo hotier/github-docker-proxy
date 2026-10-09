@@ -1,0 +1,9 @@
+# 推荐的 VS Code 扩展
+denoland.vscode-deno
+
+# 可选扩展
+# eamodio.gitlens          # Git 历史
+# dbaeumer.vscode-eslint   # ESLint
+# esbenp.prettier-vscode   # Prettier
+# ms-vscode.powershell     # PowerShell
+# redhat.vscode-yaml       # YAML
