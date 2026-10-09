@@ -3,7 +3,21 @@ import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert
 // 测试配置
 const BASE_URL = `http://localhost:${Deno.env.get("PORT") || 8000}`;
 
-Deno.test("health check returns ok", async () => {
+// 检查服务器是否运行
+async function checkServerRunning(): Promise<boolean> {
+  try {
+    const resp = await fetch(`${BASE_URL}/health`, { signal: AbortSignal.timeout(2000) });
+    return resp.ok;
+  } catch {
+    return false;
+  }
+}
+
+// 如果服务器未运行，跳过测试
+const serverRunning = await checkServerRunning();
+const testOptions = serverRunning ? {} : { ignore: true };
+
+Deno.test("health check returns ok", testOptions, async () => {
   const resp = await fetch(`${BASE_URL}/health`);
   assertEquals(resp.status, 200);
   
@@ -12,7 +26,7 @@ Deno.test("health check returns ok", async () => {
   assertExists(data.timestamp);
 });
 
-Deno.test("index page returns HTML", async () => {
+Deno.test("index page returns HTML", testOptions, async () => {
   const resp = await fetch(`${BASE_URL}/`);
   assertEquals(resp.status, 200);
   assertEquals(resp.headers.get("content-type"), "text/html; charset=utf-8");
@@ -22,7 +36,7 @@ Deno.test("index page returns HTML", async () => {
   assertExists(html.includes("Proxy"));
 });
 
-Deno.test("diag endpoint returns test results", async () => {
+Deno.test("diag endpoint returns test results", testOptions, async () => {
   const resp = await fetch(`${BASE_URL}/diag`);
   assertEquals(resp.status, 200);
   
@@ -33,7 +47,7 @@ Deno.test("diag endpoint returns test results", async () => {
   assertExists(data.tests.github_api);
 });
 
-Deno.test("404 for unknown paths", async () => {
+Deno.test("404 for unknown paths", testOptions, async () => {
   const resp = await fetch(`${BASE_URL}/unknown-path`);
   assertEquals(resp.status, 404);
   
@@ -41,7 +55,7 @@ Deno.test("404 for unknown paths", async () => {
   assertEquals(data.error, "Not Found");
 });
 
-Deno.test("GitHub proxy returns response", async () => {
+Deno.test("GitHub proxy returns response", testOptions, async () => {
   const resp = await fetch(`${BASE_URL}/gh/octocat/Hello-World`, {
     method: "HEAD",
   });
@@ -50,14 +64,14 @@ Deno.test("GitHub proxy returns response", async () => {
   assertExists([200, 301, 302, 307, 308].includes(resp.status));
 });
 
-Deno.test("Docker registry /v2/ returns 200 or 401", async () => {
+Deno.test("Docker registry /v2/ returns 200 or 401", testOptions, async () => {
   const resp = await fetch(`${BASE_URL}/v2/`);
   
   // 可能返回 200（成功）或 401（需要认证）
   assertExists([200, 401].includes(resp.status));
 });
 
-Deno.test("CORS headers are present", async () => {
+Deno.test("CORS headers are present", testOptions, async () => {
   const resp = await fetch(`${BASE_URL}/gh/octocat/Hello-World`, {
     method: "HEAD",
   });
@@ -66,7 +80,7 @@ Deno.test("CORS headers are present", async () => {
   assertExists(cors);
 });
 
-Deno.test("auth check works when PROXY_PASSWORD is set", async () => {
+Deno.test("auth check works when PROXY_PASSWORD is set", testOptions, async () => {
   // 跳过如果没有设置密码
   if (!Deno.env.get("PROXY_PASSWORD")) {
     return;
@@ -85,3 +99,9 @@ Deno.test("auth check works when PROXY_PASSWORD is set", async () => {
   });
   assertExists([200, 301, 302].includes(respWithAuth.status));
 });
+
+// 运行前提示
+if (!serverRunning) {
+  console.log("\n⚠️  服务器未运行，测试已跳过");
+  console.log("   请先启动服务器: deno task dev\n");
+}

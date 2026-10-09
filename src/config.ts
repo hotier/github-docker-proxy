@@ -33,7 +33,7 @@ export function isWhitelisted(path: string): boolean {
   if (!match) return true;
   
   const repo = `${match[1]}/${match[2]}`;
-  return CONFIG.WHITE_LIST.some(pattern => {
+  return CONFIG.WHITE_LIST.some((pattern: string) => {
     // 支持通配符，如 "hotier/*"
     const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$", "i");
     return regex.test(repo);
@@ -48,7 +48,7 @@ export function isBlacklisted(path: string): boolean {
   if (!match) return false;
   
   const repo = `${match[1]}/${match[2]}`;
-  return CONFIG.BLACK_LIST.some(pattern => {
+  return CONFIG.BLACK_LIST.some((pattern: string) => {
     const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$", "i");
     return regex.test(repo);
   });
