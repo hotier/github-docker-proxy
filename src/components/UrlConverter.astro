@@ -1,0 +1,252 @@
+---
+// URL 转换器组件 - 纯 Astro + 原生 JS
+---
+
+<div class="url-converter">
+  <!-- 输入区域 -->
+  <div class="bg-surface rounded-2xl p-4 mb-4 border border-outline-variant">
+    <label class="block text-sm font-medium text-on-surface-variant mb-2">
+      粘贴 GitHub 链接或 Docker 镜像名
+    </label>
+    <div class="flex gap-2">
+      <input 
+        type="text" 
+        id="url-input"
+        placeholder="例如: https://github.com/owner/repo/releases/download/v1.0/app.tar.gz"
+        class="flex-1 px-4 py-3 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:border-primary transition-colors"
+      />
+      <select 
+        id="format-select"
+        class="px-4 py-3 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:border-primary"
+      >
+        <option value="direct">直接链接</option>
+        <option value="git">Git Clone</option>
+        <option value="wget">Wget</option>
+        <option value="docker">Docker Pull</option>
+      </select>
+    </div>
+    
+    <!-- 快捷示例 -->
+    <div class="flex flex-wrap gap-2 mt-3">
+      <button class="example-btn text-xs px-3 py-1.5 bg-surface-container-high rounded-full text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-example="https://github.com/cli/cli/releases/download/v2.67.0/gh_2.67.0_windows_amd64.zip">
+        Release 文件
+      </button>
+      <button class="example-btn text-xs px-3 py-1.5 bg-surface-container-high rounded-full text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-example="https://github.com/owner/repo.git">
+        Git 仓库
+      </button>
+      <button class="example-btn text-xs px-3 py-1.5 bg-surface-container-high rounded-full text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-example="https://raw.githubusercontent.com/owner/repo/main/README.md">
+        Raw 文件
+      </button>
+      <button class="example-btn text-xs px-3 py-1.5 bg-surface-container-high rounded-full text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-example="library/nginx:latest">
+        Docker 镜像
+      </button>
+    </div>
+  </div>
+
+  <!-- 输出区域 -->
+  <div id="output-section" class="hidden">
+    <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+      <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+        <span class="text-sm font-medium text-on-surface">转换结果</span>
+        <div class="flex gap-1">
+          <button id="copy-btn" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" title="复制">
+            <span class="material-symbols-outlined text-lg">content_copy</span>
+          </button>
+          <button id="open-btn" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" title="在新窗口打开">
+            <span class="material-symbols-outlined text-lg">open_in_new</span>
+          </button>
+        </div>
+      </div>
+      <div class="p-4">
+        <div class="bg-surface-container-low rounded-xl p-3 mb-3">
+          <div class="text-xs text-on-surface-variant mb-1">原始链接</div>
+          <div id="original-url" class="text-sm text-on-surface break-all font-mono"></div>
+        </div>
+        <div class="bg-primary-container rounded-xl p-3">
+          <div class="text-xs text-on-primary-container/70 mb-1">加速链接</div>
+          <div id="converted-url" class="text-sm text-on-primary-container break-all font-mono font-medium"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示信息 -->
+  <div id="error-message" class="hidden mt-4 bg-error-container text-on-error-container rounded-xl p-3 text-sm">
+  </div>
+</div>
+
+<script>
+  const urlInput = document.getElementById('url-input');
+  const formatSelect = document.getElementById('format-select');
+  const outputSection = document.getElementById('output-section');
+  const originalUrl = document.getElementById('original-url');
+  const convertedUrl = document.getElementById('converted-url');
+  const errorMessage = document.getElementById('error-message');
+  const copyBtn = document.getElementById('copy-btn');
+  const openBtn = document.getElementById('open-btn');
+
+  const BASE = window.location.origin;
+
+  // URL 转换逻辑
+  function convertUrl(input, format) {
+    if (!input.trim()) return null;
+
+    // Docker 镜像格式
+    if (format === 'docker' || (!input.includes('http') && input.includes('/'))) {
+      if (!input.includes(' ') && !input.includes('http')) {
+        return {
+          original: input,
+          converted: `docker pull ${BASE}/${input}`,
+          url: `${BASE}/${input}`
+        };
+      }
+    }
+
+    try {
+      // 确保有协议
+      let urlStr = input.trim();
+      if (!/^https?:\/\//i.test(urlStr)) {
+        urlStr = 'https://' + urlStr;
+      }
+
+      const url = new URL(urlStr);
+      const host = url.hostname;
+      const path = url.pathname;
+
+      let proxyPath = '';
+
+      // GitHub
+      if (host === 'github.com') {
+        proxyPath = '/api/gh' + path;
+      }
+      // Raw 文件
+      else if (host === 'raw.githubusercontent.com') {
+        proxyPath = '/api/ghraw' + path;
+      }
+      // Codeload
+      else if (host === 'codeload.github.com') {
+        proxyPath = '/api/codeload' + path;
+      }
+      // Docker Hub
+      else if (host === 'docker.io' || host === 'registry-1.docker.io') {
+        proxyPath = '/v2' + path;
+      }
+      // GHCR
+      else if (host === 'ghcr.io') {
+        proxyPath = '/api/ghcr' + path;
+      }
+      // 其他不支持的域名
+      else {
+        return { error: `不支持的域名: ${host}` };
+      }
+
+      const fullUrl = BASE + proxyPath;
+
+      // 根据格式返回
+      switch (format) {
+        case 'git':
+          if (path.endsWith('.git')) {
+            return {
+              original: input,
+              converted: `git clone ${fullUrl}`,
+              url: fullUrl
+            };
+          }
+          return { error: 'Git Clone 需要以 .git 结尾的仓库链接' };
+        case 'wget':
+          return {
+            original: input,
+            converted: `wget "${fullUrl}"`,
+            url: fullUrl
+          };
+        default:
+          return {
+            original: input,
+            converted: fullUrl,
+            url: fullUrl
+          };
+      }
+    } catch (e) {
+      return { error: '无效的 URL 格式' };
+    }
+  }
+
+  // 更新输出
+  function updateOutput() {
+    const input = urlInput.value;
+    const format = formatSelect.value;
+    
+    errorMessage.classList.add('hidden');
+    outputSection.classList.add('hidden');
+
+    if (!input.trim()) return;
+
+    const result = convertUrl(input, format);
+
+    if (result.error) {
+      errorMessage.textContent = result.error;
+      errorMessage.classList.remove('hidden');
+      return;
+    }
+
+    originalUrl.textContent = result.original;
+    convertedUrl.textContent = result.converted;
+    outputSection.classList.remove('hidden');
+
+    // 保存到 localStorage
+    localStorage.setItem('lastUrl', input);
+    localStorage.setItem('lastFormat', format);
+  }
+
+  // 事件监听
+  urlInput.addEventListener('input', updateOutput);
+  formatSelect.addEventListener('change', updateOutput);
+
+  // 示例按钮
+  document.querySelectorAll('.example-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      urlInput.value = btn.dataset.example;
+      updateOutput();
+    });
+  });
+
+  // 复制功能
+  copyBtn.addEventListener('click', async () => {
+    const text = convertedUrl.textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      copyBtn.innerHTML = '<span class="material-symbols-outlined text-lg">check</span>';
+      setTimeout(() => {
+        copyBtn.innerHTML = '<span class="material-symbols-outlined text-lg">content_copy</span>';
+      }, 2000);
+    } catch (err) {
+      console.error('复制失败:', err);
+    }
+  });
+
+  // 打开链接
+  openBtn.addEventListener('click', () => {
+    const url = convertedUrl.textContent;
+    if (url && url.startsWith('http')) {
+      window.open(url, '_blank');
+    }
+  });
+
+  // 恢复上次的输入
+  const lastUrl = localStorage.getItem('lastUrl');
+  const lastFormat = localStorage.getItem('lastFormat');
+  if (lastUrl) {
+    urlInput.value = lastUrl;
+    if (lastFormat) formatSelect.value = lastFormat;
+    updateOutput();
+  }
+</script>
+
+<style>
+  .url-converter input:focus,
+  .url-converter select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-container);
+  }
+</style>

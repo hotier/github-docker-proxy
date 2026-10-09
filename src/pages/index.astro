@@ -1,6 +1,6 @@
 ---
 // 首页 - GitHub & Docker Proxy
-// 静态优先，只有 URL 转换器是 React Island
+import UrlConverter from '../components/UrlConverter.astro';
 ---
 
 <html lang="zh-CN">
@@ -36,8 +36,8 @@
         <div class="bg-surface-container-highest rounded-3xl p-6">
           <p class="text-on-surface-variant text-base mb-6">为 GitHub 文件访问与 Docker 镜像拉取提供加速服务</p>
           
-          <!-- React Island: URL 转换器 -->
-          <div id="url-converter"></div>
+          <!-- URL 转换器组件 -->
+          <UrlConverter />
           
           <p class="text-on-surface-variant text-sm mt-4">全面支持 Release、Archive、文件及 Git 仓库链接的转换。</p>
         </div>
