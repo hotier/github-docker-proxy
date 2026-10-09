@@ -16,12 +16,34 @@ interface AnalyticsData {
   kv_write_units: number;
 }
 
+// 获取今日开始时间（本地时区）
+function getTodayStart(): Date {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  return today;
+}
+
+// 获取 ISO 格式时间（UTC）
+function toISOUTC(date: Date): string {
+  return date.toISOString();
+}
+
 export const GET: APIRoute = async ({ request }) => {
   return withLogging(request, async () => {
     try {
+      // 计算今日时间范围（本地时区）
+      const todayStart = getTodayStart();
+      const now = new Date();
+      
+      // 转换为 UTC 时间字符串
+      const since = toISOUTC(todayStart);
+      const until = toISOUTC(now);
+      
+      console.log('Fetching analytics from', since, 'to', until);
+      
       // 调用 Deno Deploy Analytics API
       const response = await fetch(
-        `https://api.deno.com/v2/apps/${APP_NAME}/analytics`,
+        `https://api.deno.com/v2/apps/${APP_NAME}/analytics?since=${since}&until=${until}`,
         {
           headers: {
             'Authorization': `Bearer ${DENO_API_TOKEN}`,
@@ -31,7 +53,8 @@ export const GET: APIRoute = async ({ request }) => {
       );
 
       if (!response.ok) {
-        throw new Error(`Deno API error: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Deno API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -40,16 +63,13 @@ export const GET: APIRoute = async ({ request }) => {
       const fields = data.fields;
       const values = data.values;
       
-      // 计算汇总数据
+      // 计算今日汇总数据
       let totalRequests = 0;
       let totalIngress = 0;
       let totalEgress = 0;
       let totalCpuTime = 0;
       
-      // 最近 24 小时数据
-      const last24Hours = values.slice(-96); // 15分钟 * 96 = 24小时
-      
-      for (const row of last24Hours) {
+      for (const row of values) {
         totalRequests += row[1] || 0; // request_count
         totalCpuTime += row[2] || 0; // cpu_seconds
         totalIngress += row[5] || 0; // network_ingress_bytes
@@ -57,27 +77,31 @@ export const GET: APIRoute = async ({ request }) => {
       }
       
       // 获取最近的时间点数据
-      const latestValue = values[values.length - 1];
+      const latestValue = values[values.length - 1] || [];
       const latestData = {
-        time: latestValue[0],
-        request_count: latestValue[1],
-        cpu_seconds: latestValue[2],
-        network_ingress_bytes: latestValue[5],
-        network_egress_bytes: latestValue[6]
+        time: latestValue[0] || null,
+        request_count: latestValue[1] || 0,
+        cpu_seconds: latestValue[2] || 0,
+        network_ingress_bytes: latestValue[5] || 0,
+        network_egress_bytes: latestValue[6] || 0
       };
 
       return new Response(
         JSON.stringify({
           success: true,
-          summary: {
-            last24Hours: {
-              requests: totalRequests,
-              cpuTime: Math.round(totalCpuTime * 100) / 100,
-              ingressBytes: totalIngress,
-              egressBytes: totalEgress,
-              ingressFormatted: formatBytes(totalIngress),
-              egressFormatted: formatBytes(totalEgress)
-            }
+          timeRange: {
+            since: since,
+            until: until,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          },
+          today: {
+            requests: totalRequests,
+            cpuTime: Math.round(totalCpuTime * 100) / 100,
+            ingressBytes: totalIngress,
+            egressBytes: totalEgress,
+            ingressFormatted: formatBytes(totalIngress),
+            egressFormatted: formatBytes(totalEgress),
+            dataPoints: values.length
           },
           latest: latestData,
           raw: {
@@ -91,6 +115,7 @@ export const GET: APIRoute = async ({ request }) => {
         }
       );
     } catch (error) {
+      console.error('Deno Analytics API error:', error);
       return new Response(
         JSON.stringify({
           success: false,

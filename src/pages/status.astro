@@ -95,19 +95,19 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
       <h3 class="text-sm font-medium text-on-surface-variant mb-3">平台统计 (Deno Deploy)</h3>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">24h 请求数</div>
+          <div class="text-sm text-on-surface-variant mb-1">今日请求数</div>
           <div class="text-2xl font-medium text-on-surface" id="deno-requests">-</div>
         </div>
         <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">24h CPU 时间</div>
+          <div class="text-sm text-on-surface-variant mb-1">今日 CPU 时间</div>
           <div class="text-2xl font-medium text-primary" id="deno-cpu">-</div>
         </div>
         <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">24h 入站流量</div>
+          <div class="text-sm text-on-surface-variant mb-1">今日入站流量</div>
           <div class="text-2xl font-medium text-on-surface" id="deno-ingress">-</div>
         </div>
         <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">24h 出站流量</div>
+          <div class="text-sm text-on-surface-variant mb-1">今日出站流量</div>
           <div class="text-2xl font-medium text-primary" id="deno-egress">-</div>
         </div>
       </div>
@@ -487,16 +487,17 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
       const data = await response.json();
       
       if (data.success) {
-        updateElement('deno-requests', data.summary.last24Hours.requests.toLocaleString());
-        updateElement('deno-cpu', data.summary.last24Hours.cpuTime + 's');
-        updateElement('deno-ingress', data.summary.last24Hours.ingressFormatted);
-        updateElement('deno-egress', data.summary.last24Hours.egressFormatted);
+        updateElement('deno-requests', data.today.requests.toLocaleString());
+        updateElement('deno-cpu', data.today.cpuTime + 's');
+        updateElement('deno-ingress', data.today.ingressFormatted);
+        updateElement('deno-egress', data.today.egressFormatted);
       }
     } catch (error) {
       console.error('Failed to fetch Deno analytics:', error);
     }
   }
 
+  
   // 刷新所有数据
   function refreshAll() {
     checkGitHubStatus();
