@@ -83,12 +83,22 @@ Deno.serve({ port: PORT }, async (req: Request) => {
     return await serveStatic("static/index.html", "text/html; charset=utf-8");
   }
   
-  if (path === "/style.css") {
-    return await serveStatic("static/css/style.css", "text/css; charset=utf-8");
+  if (path === "/styles.css") {
+    return await serveStatic("static/styles.css", "text/css; charset=utf-8");
   }
   
-  if (path === "/script.js") {
-    return await serveStatic("static/js/script.js", "application/javascript; charset=utf-8");
+  if (path === "/favicon.svg") {
+    return await serveStatic("static/favicon.svg", "image/svg+xml");
+  }
+  
+  if (path === "/favicon.ico") {
+    return await serveStatic("static/favicon.ico", "image/x-icon");
+  }
+  
+  // Astro 构建的 JS 文件
+  if (path.startsWith("/_astro/")) {
+    const fileName = path.replace("/_astro/", "");
+    return await serveStatic(`static/_astro/${fileName}`, "application/javascript; charset=utf-8");
   }
 
   // 鉴权检查
@@ -134,4 +144,5 @@ console.log(`\n💡 Tips:`);
 console.log(`  - Press Ctrl+C to stop`);
 console.log(`  - Set PORT env to change port (default: 8000)`);
 console.log(`  - Set PROXY_PASSWORD env to enable auth\n`);
+
 
