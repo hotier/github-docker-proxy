@@ -28,5 +28,11 @@
     "allowJs": true,
     "lib": ["deno.window"],
     "strict": true
+  },
+  "deploy": {
+    "org": "hotier",
+    "app": "github-docker-proxy"
   }
 }
+
+
