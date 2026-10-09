@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="GitHub & Docker 资源加速代理 - 基于 Deno Deploy 的免费边缘网络">
+  <title>GitHub & Docker Proxy</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="app-bar">
+      <span class="material-symbols-outlined app-bar__icon">rocket_launch</span>
+      <h1 class="app-bar__title">GitHub & Docker Proxy</h1>
+    </header>
+
+    <main class="content">
+      <!-- URL Converter Card -->
+      <div class="card input-card">
+        <p class="input-card__description">为 GitHub 文件访问与 Docker 镜像拉取提供加速服务</p>
+        
+        <form id="github-form" class="input-card__form">
+          <div class="text-field">
+            <input type="text" class="text-field__input" id="githubLinkInput" placeholder="请在此处输入 GitHub 链接或 Docker 镜像名">
+            <div class="text-field__error" id="githubLinkError"></div>
+          </div>
+
+          <div class="format-selector">
+            <label class="format-selector__label">选择输出格式:</label>
+            <div id="format-toggle" class="segmented-control">
+              <div class="segmented-control__slider"></div>
+              <button type="button" class="segmented-control__button active" data-value="direct">直接链接</button>
+              <button type="button" class="segmented-control__button" data-value="git">Git Clone</button>
+              <button type="button" class="segmented-control__button" data-value="wget">Wget</button>
+              <button type="button" class="segmented-control__button" data-value="docker">Docker Pull</button>
+            </div>
+          </div>
+
+          <button type="submit" class="button button--filled">
+            <span class="material-symbols-outlined">link</span>
+            生成链接
+          </button>
+        </form>
+
+        <div id="output" class="output-area" style="display: none;">
+          <pre id="formattedLinkOutput" class="output-area__pre"></pre>
+          <div class="output-area__actions">
+            <button id="copyButton" class="button button--icon" title="复制链接">
+              <span class="material-symbols-outlined">content_copy</span>
+            </button>
+            <button id="openButton" class="button button--icon" title="在新标签页中打开">
+              <span class="material-symbols-outlined">open_in_new</span>
+            </button>
+          </div>
+        </div>
+        
+        <p class="helper-text">全面支持 Release、Archive、文件及 Git 仓库链接的转换。</p>
+      </div>
+
+      <!-- GitHub 加速 -->
+      <div class="card">
+        <div class="card-title">
+          <span class="material-symbols-outlined">download</span>
+          GitHub 加速
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab(this, 'release')">Release 下载</button>
+          <button class="tab" onclick="switchTab(this, 'clone')">Git Clone</button>
+          <button class="tab" onclick="switchTab(this, 'raw')">Raw 文件</button>
+          <button class="tab" onclick="switchTab(this, 'archive')">源码归档</button>
+        </div>
+
+        <div class="tab-content active" id="tab-release">
+          <div class="code-block">
+            <div class="code-header">
+              <span class="lang">Shell</span>
+              <button class="button button--icon" onclick="copyCode(this)" title="复制">
+                <span class="material-symbols-outlined">content_copy</span>
+              </button>
+            </div>
+            <div class="code-body"><span class="comment"># 原始链接</span>
+<span class="cmd">curl</span> -L -o app.tar.gz <span class="string">https://github.com/owner/repo/releases/download/v1.0/app.tar.gz</span>
+
+<span class="comment"># 加速链接</span>
+<span class="cmd">curl</span> -L -o app.tar.gz <span class="string" id="release-url">https://example.com/gh/owner/repo/releases/download/v1.0/app.tar.gz</span></div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-clone">
+          <div class="code-block">
+            <div class="code-header">
+              <span class="lang">Shell</span>
+              <button class="button button--icon" onclick="copyCode(this)" title="复制">
+                <span class="material-symbols-outlined">content_copy</span>
+              </button>
+            </div>
+            <div class="code-body"><span class="comment"># 原始命令</span>
+<span class="cmd">git</span> clone https://github.com/owner/repo.git
+
+<span class="comment"># 加速命令</span>
+<span class="cmd">git</span> clone <span class="string" id="clone-url">https://example.com/gh/owner/repo.git</span></div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-raw">
+          <div class="code-block">
+            <div class="code-header">
+              <span class="lang">Shell</span>
+              <button class="button button--icon" onclick="copyCode(this)" title="复制">
+                <span class="material-symbols-outlined">content_copy</span>
+              </button>
+            </div>
+            <div class="code-body"><span class="comment"># 原始链接</span>
+<span class="cmd">curl</span> <span class="string">https://raw.githubusercontent.com/owner/repo/main/README.md</span>
+
+<span class="comment"># 加速链接</span>
+<span class="cmd">curl</span> <span class="string" id="raw-url">https://example.com/ghraw/owner/repo/main/README.md</span></div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-archive">
+          <div class="code-block">
+            <div class="code-header">
+              <span class="lang">Shell</span>
+              <button class="button button--icon" onclick="copyCode(this)" title="复制">
+                <span class="material-symbols-outlined">content_copy</span>
+              </button>
+            </div>
+            <div class="code-body"><span class="comment"># 下载分支归档 (zip)</span>
+<span class="cmd">curl</span> -L -o repo.zip <span class="string" id="archive-url">https://example.com/gh/owner/repo/archive/refs/heads/main.zip</span>
+
+<span class="comment"># 下载分支归档 (tar.gz)</span>
+<span class="cmd">curl</span> -L -o repo.tar.gz <span class="string">https://example.com/gh/owner/repo/archive/refs/heads/main.tar.gz</span></div>
+          </div>
+        </div>
+
+        <h4 style="margin-top: 24px; margin-bottom: 12px; color: var(--md-sys-color-on-surface-variant); font-size: 14px; font-weight: 500;">支持的端点</h4>
+        <div class="endpoints-grid">
+          <div class="endpoint-item">
+            <span class="prefix">/gh/</span>
+            <span class="target">github.com 全站代理</span>
+          </div>
+          <div class="endpoint-item">
+            <span class="prefix">/ghraw/</span>
+            <span class="target">raw.githubusercontent.com</span>
+          </div>
+          <div class="endpoint-item">
+            <span class="prefix">/codeload/</span>
+            <span class="target">codeload.github.com</span>
+          </div>
+          <div class="endpoint-item">
+            <span class="prefix">/objects/</span>
+            <span class="target">objects.githubusercontent.com</span>
+          </div>
+          <div class="endpoint-item">
+            <span class="prefix">/release-assets/</span>
+            <span class="target">release-assets.githubusercontent.com</span>
+          </div>
+          <div class="endpoint-item">
+            <span class="prefix">/api.github.com/</span>
+            <span class="target">api.github.com API 代理</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Docker 加速 -->
+      <div class="card">
+        <div class="card-title">
+          <span class="material-symbols-outlined">layers</span>
+          Docker 镜像加速
+        </div>
+
+        <div class="alert alert-info">
+          <span class="alert-icon">info</span>
+          <span>配置 Docker 镜像加速器后，拉取 Docker Hub、GHCR、GCR、Quay 等镜像将自动通过代理加速。</span>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="lang">JSON · /etc/docker/daemon.json</span>
+            <button class="button button--icon" onclick="copyCode(this)" title="复制">
+              <span class="material-symbols-outlined">content_copy</span>
+            </button>
+          </div>
+          <div class="code-body">{
+  <span class="string">"registry-mirrors"</span>: [<span class="string" id="docker-config">"https://example.com"</span>]
+}</div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="lang">Shell</span>
+            <button class="button button--icon" onclick="copyCode(this)" title="复制">
+              <span class="material-symbols-outlined">content_copy</span>
+            </button>
+          </div>
+          <div class="code-body"><span class="comment"># 重启 Docker 服务</span>
+<span class="cmd">sudo</span> systemctl daemon-reload
+<span class="cmd">sudo</span> systemctl restart docker
+
+<span class="comment"># 或者直接拉取镜像（无需配置）</span>
+<span class="cmd">docker</span> pull <span class="string" id="docker-pull">https://example.com</span>/library/nginx:latest</div>
+        </div>
+
+        <h4 style="margin-top: 24px; margin-bottom: 12px; color: var(--md-sys-color-on-surface-variant); font-size: 14px; font-weight: 500;">支持的 Registry</h4>
+        <div class="endpoints-grid">
+          <div class="endpoint-item">
+            <span class="prefix">/v2/</span>
+            <span class="target">Docker Hub (registry-1.docker.io)</span>
+          </div>
+          <div class="endpoint-item">
+            <span class="prefix">/ghcr/</span>
+            <span class="target">GitHub Container Registry</span>
+          </div>
+          <div class="endpoint-item">
+            <span class="prefix">/gcr/</span>
+            <span class="target">Google Container Registry</span>
+          </div>
+          <div class="endpoint-item">
+            <span class="prefix">/k8s/</span>
+            <span class="target">Kubernetes Registry</span>
+          </div>
+          <div class="endpoint-item">
+            <span class="prefix">/quay/</span>
+            <span class="target">Red Hat Quay</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 高级配置 -->
+      <div class="card">
+        <div class="card-title">
+          <span class="material-symbols-outlined">settings</span>
+          高级配置
+        </div>
+
+        <div class="alert alert-warning">
+          <span class="alert-icon">warning</span>
+          <span><strong>鉴权保护</strong>：如需防止滥用，可在 Deno Deploy Dashboard 中设置 <code style="font-family: 'SF Mono', monospace; background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 4px;">PROXY_PASSWORD</code> 环境变量启用 Basic Auth。</span>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="lang">Shell · 带鉴权的请求</span>
+            <button class="button button--icon" onclick="copyCode(this)" title="复制">
+              <span class="material-symbols-outlined">content_copy</span>
+            </button>
+          </div>
+          <div class="code-body"><span class="comment"># 使用 curl 时添加认证头</span>
+<span class="cmd">curl</span> -u proxy:<span class="string">$PROXY_PASSWORD</span> -L <span class="string" id="auth-url">https://example.com</span>/gh/owner/repo/releases/download/v1.0/app.tar.gz</div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="lang">Shell · Docker 客户端认证</span>
+            <button class="button button--icon" onclick="copyCode(this)" title="复制">
+              <span class="material-symbols-outlined">content_copy</span>
+            </button>
+          </div>
+          <div class="code-body"><span class="comment"># 登录到代理 registry</span>
+<span class="cmd">docker</span> login <span class="string" id="docker-login">https://example.com</span> -u proxy -p <span class="string">$PROXY_PASSWORD</span></div>
+        </div>
+      </div>
+
+      <!-- 服务状态 -->
+      <div class="status-cards">
+        <div class="card info-card">
+          <span class="material-symbols-outlined info-card__icon">download</span>
+          <h2 class="info-card__title">文件大小限制</h2>
+          <p class="info-card__text">无限制</p>
+        </div>
+        <div class="card info-card">
+          <span class="material-symbols-outlined info-card__icon">speed</span>
+          <h2 class="info-card__title">请求配额</h2>
+          <p class="info-card__text">100万/天</p>
+        </div>
+        <div class="card info-card">
+          <span class="material-symbols-outlined info-card__icon">memory</span>
+          <h2 class="info-card__title">内存限制</h2>
+          <p class="info-card__text">128MB</p>
+        </div>
+        <div class="card info-card">
+          <span class="material-symbols-outlined info-card__icon">public</span>
+          <h2 class="info-card__title">边缘节点</h2>
+          <p class="info-card__text">Deno Deploy</p>
+        </div>
+        <div class="card info-card">
+          <span class="material-symbols-outlined info-card__icon">check_circle</span>
+          <h2 class="info-card__title">GitHub 加速</h2>
+          <p class="info-card__text" id="githubStatus">运行中</p>
+        </div>
+        <div class="card info-card">
+          <span class="material-symbols-outlined info-card__icon">check_circle</span>
+          <h2 class="info-card__title">Docker 加速</h2>
+          <p class="info-card__text" id="dockerStatus">运行中</p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>
+        基于 <a href="https://deno.com/deploy" target="_blank">Deno Deploy</a> 构建 · 开源项目<br>
+        <a href="https://github.com/hotier/github-docker-proxy">GitHub 仓库</a>
+      </p>
+      <div class="tech-stack">
+        <span class="tech-tag">Deno</span>
+        <span class="tech-tag">TypeScript</span>
+        <span class="tech-tag">Edge Network</span>
+        <span class="tech-tag">Material Design 3</span>
+      </div>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast">
+    <div class="toast__message" id="toastMessage"></div>
+  </div>
+
+  <div id="versionBadge" class="version-badge">v1.0.0</div>
+
+  <script src="/script.js"></script>
+</body>
+</html>
