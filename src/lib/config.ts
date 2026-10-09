@@ -1,25 +1,36 @@
 // 配置文件
+// 注意：在 Astro 中使用 import.meta.env，在 Deno 中使用 Deno.env
+
+const getEnv = (key: string): string => {
+  // @ts-ignore
+  if (typeof Deno !== 'undefined') {
+    // @ts-ignore
+    return Deno.env.get(key) || '';
+  }
+  // @ts-ignore
+  return import.meta.env[key] || '';
+};
 
 export const CONFIG = {
   // 访问控制
-  PROXY_PASSWORD: Deno.env.get("PROXY_PASSWORD") || "",
+  PROXY_PASSWORD: getEnv("PROXY_PASSWORD"),
   
   // 白名单/黑名单（JSON 格式环境变量）
   // 例如: WHITE_LIST=["hotier/*","octocat/Hello-World"]
-  WHITE_LIST: JSON.parse(Deno.env.get("WHITE_LIST") || "[]"),
-  BLACK_LIST: JSON.parse(Deno.env.get("BLACK_LIST") || "[]"),
+  WHITE_LIST: JSON.parse(getEnv("WHITE_LIST") || "[]"),
+  BLACK_LIST: JSON.parse(getEnv("BLACK_LIST") || "[]"),
   
   // 大小限制（GB），超过则重定向到原始 URL
-  SIZE_LIMIT: parseInt(Deno.env.get("SIZE_LIMIT") || "999"),
+  SIZE_LIMIT: parseInt(getEnv("SIZE_LIMIT") || "999"),
   
   // 是否启用 jsDelivr 加速（小文件）
-  USE_JSDELIVR: Deno.env.get("USE_JSDELIVR") === "true",
+  USE_JSDELIVR: getEnv("USE_JSDELIVR") === "true",
   
   // 速率限制（每分钟请求数，0 表示不限制）
-  RATE_LIMIT: parseInt(Deno.env.get("RATE_LIMIT") || "0"),
+  RATE_LIMIT: parseInt(getEnv("RATE_LIMIT") || "0"),
   
   // 缓存控制
-  CACHE_RELEASE: Deno.env.get("CACHE_RELEASE") !== "false", // 默认开启
+  CACHE_RELEASE: getEnv("CACHE_RELEASE") !== "false", // 默认开启
   
   // 版本号
   VERSION: "1.0.0",

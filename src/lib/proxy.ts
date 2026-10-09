@@ -129,6 +129,17 @@ export async function proxyRequest(
     return newResp;
   } catch (error) {
     console.error("Proxy error:", error);
+    
+    // 网络错误（如本地无法访问 GitHub）
+    if (error.message?.includes('fetch failed') || error.message?.includes('SSL')) {
+      return jsonResponse({ 
+        error: "Network Error", 
+        message: "无法连接到目标服务器（可能是本地网络问题）",
+        target: targetUrl,
+        hint: "This works in production (Deno Deploy) but may fail in local development due to network restrictions."
+      }, 502);
+    }
+    
     return jsonResponse({ 
       error: "Proxy Error", 
       message: error.message,
