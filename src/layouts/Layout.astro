@@ -82,6 +82,33 @@ const isActive = (path: string) => {
             ))}
           </nav>
           
+          <!-- 主题切换按钮 -->
+          <div class="relative">
+            <button 
+              id="theme-toggle-btn"
+              class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              title="切换主题"
+            >
+              <span class="material-symbols-outlined" id="theme-icon">dark_mode</span>
+            </button>
+            
+            <!-- 主题选择下拉菜单 -->
+            <div id="theme-menu" class="hidden absolute right-0 mt-2 w-48 bg-surface-container-highest rounded-2xl shadow-lg border border-outline-variant py-2 z-50">
+              <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container-high transition-colors" data-theme="light">
+                <span class="material-symbols-outlined text-lg">light_mode</span>
+                <span>亮色模式</span>
+              </button>
+              <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container-high transition-colors" data-theme="dark">
+                <span class="material-symbols-outlined text-lg">dark_mode</span>
+                <span>暗色模式</span>
+              </button>
+              <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container-high transition-colors" data-theme="system">
+                <span class="material-symbols-outlined text-lg">settings_suggest</span>
+                <span>跟随系统</span>
+              </button>
+            </div>
+          </div>
+
           <!-- 移动端菜单按钮 -->
           <button 
             id="mobile-menu-btn"
@@ -160,6 +187,91 @@ const isActive = (path: string) => {
         mobileMenu?.classList.add('hidden');
       }
     });
+  </script>
+
+  <!-- 主题切换脚本 -->
+  <script>
+    // 主题管理
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const themeMenu = document.getElementById('theme-menu');
+    const themeIcon = document.getElementById('theme-icon');
+    const themeOptions = document.querySelectorAll('.theme-option');
+    
+    // 获取当前主题
+    function getCurrentTheme() {
+      return localStorage.getItem('theme') || 'system';
+    }
+    
+    // 应用主题
+    function applyTheme(theme) {
+      const html = document.documentElement;
+      
+      if (theme === 'system') {
+        // 跟随系统
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        html.classList.toggle('dark', prefersDark);
+        updateIcon(prefersDark ? 'dark' : 'light', true);
+      } else {
+        // 手动设置
+        html.classList.toggle('dark', theme === 'dark');
+        updateIcon(theme, false);
+      }
+      
+      // 保存主题偏好
+      localStorage.setItem('theme', theme);
+      
+      // 更新按钮状态
+      themeOptions.forEach(option => {
+        option.classList.toggle('bg-primary-container', option.dataset.theme === theme);
+      });
+    }
+    
+    // 更新图标
+    function updateIcon(theme, isSystem) {
+      if (isSystem) {
+        themeIcon.textContent = 'settings_suggest';
+      } else {
+        themeIcon.textContent = theme === 'dark' ? 'dark_mode' : 'light_mode';
+      }
+    }
+    
+    // 初始化主题
+    function initTheme() {
+      const savedTheme = getCurrentTheme();
+      applyTheme(savedTheme);
+    }
+    
+    // 切换菜单显示
+    themeToggleBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      themeMenu?.classList.toggle('hidden');
+    });
+    
+    // 点击外部关闭菜单
+    document.addEventListener('click', (e) => {
+      if (!themeToggleBtn?.contains(e.target) && !themeMenu?.contains(e.target)) {
+        themeMenu?.classList.add('hidden');
+      }
+    });
+    
+    // 主题选项点击
+    themeOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const theme = option.dataset.theme;
+        applyTheme(theme);
+        themeMenu?.classList.add('hidden');
+      });
+    });
+    
+    // 监听系统主题变化
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if (getCurrentTheme() === 'system') {
+        applyTheme('system');
+      }
+    });
+    
+    // 页面加载时初始化
+    initTheme();
   </script>
 </body>
 </html>

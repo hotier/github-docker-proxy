@@ -58,8 +58,52 @@
 }
 
 /* 暗色模式 */
+/* 暗色模式 - 使用 .dark 类 */
+.dark {
+  --color-primary: #62d4ff;
+  --color-on-primary: #003544;
+  --color-primary-container: #004d61;
+  --color-on-primary-container: #b8eaff;
+  
+  --color-secondary: #b5cbcb;
+  --color-on-secondary: #203333;
+  --color-secondary-container: #374a4a;
+  --color-on-secondary-container: #d1e7e6;
+  
+  --color-tertiary: #c5c4eb;
+  --color-on-tertiary: #2e2f4d;
+  --color-tertiary-container: #444564;
+  --color-on-tertiary-container: #e2e0ff;
+  
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffb4ab;
+  
+  --color-background: #191c1c;
+  --color-on-background: #e1e3e3;
+  --color-surface: #191c1c;
+  --color-on-surface: #e1e3e3;
+  --color-surface-variant: #3f4849;
+  --color-on-surface-variant: #bfc8c9;
+  
+  --color-outline: #899293;
+  --color-outline-variant: #3f4849;
+  
+  --color-surface-container-lowest: #0e1111;
+  --color-surface-container-low: #191c1c;
+  --color-surface-container: #1d2020;
+  --color-surface-container-high: #272b2b;
+  --color-surface-container-highest: #323636;
+  
+  --color-inverse-surface: #e1e3e3;
+  --color-inverse-on-surface: #191c1c;
+  --color-inverse-primary: #006780;
+}
+
+/* 系统暗色模式支持 */
 @media (prefers-color-scheme: dark) {
-  @theme {
+  :root:not(.light):not(.dark) {
     --color-primary: #62d4ff;
     --color-on-primary: #003544;
     --color-primary-container: #004d61;
