@@ -58,10 +58,6 @@
         </div>
       </div>
       <div class="p-4">
-        <div class="bg-surface-container-low rounded-xl p-3 mb-3">
-          <div class="text-xs text-on-surface-variant mb-1">原始链接</div>
-          <div id="original-url" class="text-sm text-on-surface break-all font-mono"></div>
-        </div>
         <div class="bg-primary-container rounded-xl p-3">
           <div class="text-xs text-on-primary-container/70 mb-1">加速链接</div>
           <div id="converted-url" class="text-sm text-on-primary-container break-all font-mono font-medium"></div>
@@ -189,7 +185,6 @@
       return;
     }
 
-    originalUrl.textContent = result.original;
     convertedUrl.textContent = result.converted;
     outputSection.classList.remove('hidden');
 
