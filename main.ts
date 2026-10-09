@@ -101,35 +101,46 @@ async function proxyRequest(
 ): Promise<Response> {
   const targetUrl = upstream + targetPath + search;
 
-  // 构建请求头
-  const headers = filterHeaders(req.headers);
-  headers.set("host", new URL(upstream).host);
+  try {
+    // 构建请求头
+    const headers = filterHeaders(req.headers);
+    headers.set("host", new URL(upstream).host);
+    // GitHub 要求设置 User-Agent
+    headers.set("user-agent", "github-docker-proxy/1.0");
 
-  // 发起请求
-  let resp = await fetch(targetUrl, {
-    method: req.method,
-    headers,
-    body: req.method !== "GET" && req.method !== "HEAD" ? req.body : undefined,
-    redirect: "manual",
-  });
+    // 发起请求
+    let resp = await fetch(targetUrl, {
+      method: req.method,
+      headers,
+      body: req.method !== "GET" && req.method !== "HEAD" ? req.body : undefined,
+      redirect: "manual",
+    });
 
-  // 处理重定向：重写 Location 头
-  if ([301, 302, 307, 308].includes(resp.status)) {
-    const location = resp.headers.get("location");
-    if (location) {
-      const newLocation = rewriteLocation(location);
-      const newResp = new Response(null, { status: resp.status });
-      newResp.headers.set("location", newLocation);
-      copyHeaders(resp.headers, newResp.headers, ["location"]);
-      return newResp;
+    // 处理重定向：重写 Location 头
+    if ([301, 302, 307, 308].includes(resp.status)) {
+      const location = resp.headers.get("location");
+      if (location) {
+        const newLocation = rewriteLocation(location);
+        const newResp = new Response(null, { status: resp.status });
+        newResp.headers.set("location", newLocation);
+        copyHeaders(resp.headers, newResp.headers, ["location"]);
+        return newResp;
+      }
     }
+
+    // 流式转发
+    const newResp = new Response(resp.body, { status: resp.status });
+    copyHeaders(resp.headers, newResp.headers);
+
+    return newResp;
+  } catch (error) {
+    console.error("Proxy error:", error);
+    return jsonResponse({ 
+      error: "Proxy Error", 
+      message: error.message,
+      target: targetUrl 
+    }, 500);
   }
-
-  // 流式转发
-  const newResp = new Response(resp.body, { status: resp.status });
-  copyHeaders(resp.headers, newResp.headers);
-
-  return newResp;
 }
 
 // ==================== Docker Registry 代理 ====================
