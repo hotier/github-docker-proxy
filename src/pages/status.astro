@@ -1,46 +1,85 @@
 ---
 // 状态和配置页面
 import Layout from '../layouts/Layout.astro';
+import GitHubIcon from '../components/icons/GitHubIcon.astro';
+import DockerIcon from '../components/icons/DockerIcon.astro';
 ---
 
 <Layout title="服务状态" activeNav="/status">
   <!-- 页面标题 -->
   <div class="mb-6">
     <h1 class="text-3xl font-medium text-on-surface mb-2">服务状态</h1>
-    <p class="text-on-surface-variant">实时监控服务运行状态和性能指标</p>
+    <p class="text-on-surface-variant">实时监控各节点状态和请求配额使用情况</p>
   </div>
 
-  <!-- 状态卡片 -->
-  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6" id="status-cards">
-    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center">
-      <span class="material-symbols-outlined text-primary text-4xl mb-3">download</span>
-      <h3 class="text-sm font-medium text-on-surface mb-2">文件大小限制</h3>
-      <p class="text-base text-on-surface-variant">无限制</p>
+  <!-- 节点状态卡片 -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="status-cards">
+    <!-- GitHub 加速状态 -->
+    <div class="bg-surface-container-highest rounded-3xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <GitHubIcon size={32} class="text-on-surface" />
+          <div>
+            <h3 class="font-medium text-on-surface">GitHub 加速</h3>
+            <p class="text-xs text-on-surface-variant">github.com 资源代理</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="github-status-dot" class="w-3 h-3 rounded-full bg-gray-400 animate-pulse"></span>
+          <span id="github-status-text" class="text-sm text-on-surface-variant">检测中...</span>
+        </div>
+      </div>
+      
+      <!-- 响应时间 -->
+      <div class="mb-3">
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-on-surface-variant">响应时间</span>
+          <span id="github-response-time" class="text-on-surface font-mono">-</span>
+        </div>
+        <div class="w-full bg-surface-container rounded-full h-2">
+          <div id="github-response-bar" class="bg-primary h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- 今日请求数 -->
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-on-surface-variant">今日请求</span>
+        <span id="github-today-requests" class="text-on-surface font-mono">-</span>
+      </div>
     </div>
-    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center">
-      <span class="material-symbols-outlined text-primary text-4xl mb-3">speed</span>
-      <h3 class="text-sm font-medium text-on-surface mb-2">请求配额</h3>
-      <p class="text-base text-on-surface-variant">100万/天</p>
-    </div>
-    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center">
-      <span class="material-symbols-outlined text-primary text-4xl mb-3">memory</span>
-      <h3 class="text-sm font-medium text-on-surface mb-2">内存限制</h3>
-      <p class="text-base text-on-surface-variant">128MB</p>
-    </div>
-    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center">
-      <span class="material-symbols-outlined text-primary text-4xl mb-3">public</span>
-      <h3 class="text-sm font-medium text-on-surface mb-2">边缘节点</h3>
-      <p class="text-base text-on-surface-variant">Deno Deploy</p>
-    </div>
-    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center cursor-pointer hover:bg-surface-container-high transition-colors" id="github-status-card">
-      <span class="material-symbols-outlined text-primary text-4xl mb-3">check_circle</span>
-      <h3 class="text-sm font-medium text-on-surface mb-2">GitHub 加速</h3>
-      <p class="text-base text-on-surface-variant" id="githubStatus">检测中...</p>
-    </div>
-    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center cursor-pointer hover:bg-surface-container-high transition-colors" id="docker-status-card">
-      <span class="material-symbols-outlined text-primary text-4xl mb-3">check_circle</span>
-      <h3 class="text-sm font-medium text-on-surface mb-2">Docker 加速</h3>
-      <p class="text-base text-on-surface-variant" id="dockerStatus">检测中...</p>
+
+    <!-- Docker 加速状态 -->
+    <div class="bg-surface-container-highest rounded-3xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <DockerIcon size={32} class="text-on-surface" />
+          <div>
+            <h3 class="font-medium text-on-surface">Docker 加速</h3>
+            <p class="text-xs text-on-surface-variant">容器镜像仓库代理</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="docker-status-dot" class="w-3 h-3 rounded-full bg-gray-400 animate-pulse"></span>
+          <span id="docker-status-text" class="text-sm text-on-surface-variant">检测中...</span>
+        </div>
+      </div>
+      
+      <!-- 响应时间 -->
+      <div class="mb-3">
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-on-surface-variant">响应时间</span>
+          <span id="docker-response-time" class="text-on-surface font-mono">-</span>
+        </div>
+        <div class="w-full bg-surface-container rounded-full h-2">
+          <div id="docker-response-bar" class="bg-primary h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- 今日请求数 -->
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-on-surface-variant">今日请求</span>
+        <span id="docker-today-requests" class="text-on-surface font-mono">-</span>
+      </div>
     </div>
   </div>
 
@@ -79,6 +118,50 @@ import Layout from '../layouts/Layout.astro';
         </div>
         <div id="weekly-labels" class="flex justify-between gap-2 mt-2 text-xs text-on-surface-variant">
           <!-- 动态生成标签 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 请求配额使用率 -->
+  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
+    <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
+      <span class="material-symbols-outlined text-primary">speed</span>
+      今日配额使用
+    </h2>
+    
+    <div class="space-y-4">
+      <!-- 请求数配额 -->
+      <div>
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-on-surface-variant">请求次数</span>
+          <span class="text-sm font-mono text-on-surface">
+            <span id="quota-used">0</span> / <span id="quota-total">1,000,000</span>
+          </span>
+        </div>
+        <div class="w-full bg-surface-container rounded-full h-3 overflow-hidden">
+          <div id="quota-bar" class="bg-primary h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between mt-1 text-xs text-on-surface-variant">
+          <span id="quota-percentage">0%</span>
+          <span id="quota-remaining">剩余 1,000,000</span>
+        </div>
+      </div>
+
+      <!-- 流量配额 -->
+      <div>
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-on-surface-variant">流量使用</span>
+          <span class="text-sm font-mono text-on-surface">
+            <span id="bytes-used">0 B</span> / <span id="bytes-total">100 GB</span>
+          </span>
+        </div>
+        <div class="w-full bg-surface-container rounded-full h-3 overflow-hidden">
+          <div id="bytes-bar" class="bg-secondary h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between mt-1 text-xs text-on-surface-variant">
+          <span id="bytes-percentage">0%</span>
+          <span id="bytes-remaining">剩余 100 GB</span>
         </div>
       </div>
     </div>
@@ -162,30 +245,61 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
-  // 检查服务状态
-  async function checkHealth() {
+  // 检查 GitHub 节点状态
+  async function checkGitHubStatus() {
+    const start = Date.now();
     try {
-      const response = await fetch('/api/health');
-      const data = await response.json();
-      
-      const githubStatus = document.getElementById('githubStatus');
-      const dockerStatus = document.getElementById('dockerStatus');
-      
-      if (data.status === 'ok') {
-        if (githubStatus) githubStatus.textContent = '运行中';
-        if (dockerStatus) dockerStatus.textContent = '运行中';
-      } else {
-        if (githubStatus) githubStatus.textContent = '异常';
-        if (dockerStatus) dockerStatus.textContent = '异常';
-      }
-      
-      return data;
+      const response = await fetch('/api/gh/octocat/Hello-World', { method: 'HEAD' });
+      const duration = Date.now() - start;
+      updateStatusUI('github', true, duration);
     } catch (error) {
-      const githubStatus = document.getElementById('githubStatus');
-      const dockerStatus = document.getElementById('dockerStatus');
-      if (githubStatus) githubStatus.textContent = '异常';
-      if (dockerStatus) dockerStatus.textContent = '异常';
-      return null;
+      updateStatusUI('github', false, 0);
+    }
+  }
+
+  // 检查 Docker 节点状态
+  async function checkDockerStatus() {
+    const start = Date.now();
+    try {
+      const response = await fetch('/v2/');
+      const duration = Date.now() - start;
+      updateStatusUI('docker', response.ok || response.status === 401, duration);
+    } catch (error) {
+      updateStatusUI('docker', false, 0);
+    }
+  }
+
+  // 更新状态 UI
+  function updateStatusUI(type, isOk, duration) {
+    const dot = document.getElementById(type + '-status-dot');
+    const text = document.getElementById(type + '-status-text');
+    const timeEl = document.getElementById(type + '-response-time');
+    const bar = document.getElementById(type + '-response-bar');
+    
+    if (dot) {
+      dot.className = 'w-3 h-3 rounded-full ' + (isOk ? 'bg-green-500' : 'bg-red-500');
+    }
+    
+    if (text) {
+      text.textContent = isOk ? '正常' : '异常';
+      text.className = 'text-sm ' + (isOk ? 'text-green-600' : 'text-red-600');
+    }
+    
+    if (timeEl && isOk) {
+      timeEl.textContent = duration + 'ms';
+    }
+    
+    if (bar && isOk) {
+      const percent = Math.min((duration / 1000) * 100, 100);
+      bar.style.width = percent + '%';
+      
+      if (duration < 200) {
+        bar.className = 'bg-green-500 h-2 rounded-full transition-all duration-500';
+      } else if (duration < 500) {
+        bar.className = 'bg-yellow-500 h-2 rounded-full transition-all duration-500';
+      } else {
+        bar.className = 'bg-red-500 h-2 rounded-full transition-all duration-500';
+      }
     }
   }
 
@@ -195,24 +309,75 @@ import Layout from '../layouts/Layout.astro';
       const response = await fetch('/api/stats');
       const data = await response.json();
       
-      // 更新统计卡片
       const todayRequests = document.getElementById('today-requests');
       const todayBytes = document.getElementById('today-bytes');
       const totalRequests = document.getElementById('total-requests');
       const totalBytes = document.getElementById('total-bytes');
       
-      if (todayRequests) todayRequests.textContent = data.formatted?.todayRequests || data.today?.requests || 0;
-      if (todayBytes) todayBytes.textContent = data.formatted?.todayBytes || '0 B';
-      if (totalRequests) totalRequests.textContent = data.formatted?.totalRequests || data.total?.requests || 0;
-      if (totalBytes) totalBytes.textContent = data.formatted?.totalBytes || '0 B';
+      const todayReq = data.today?.requests || 0;
+      const todayByt = data.today?.bytes || 0;
+      const totalReq = data.total?.requests || 0;
+      const totalByt = data.total?.bytes || 0;
       
-      // 渲染周统计图表
+      if (todayRequests) todayRequests.textContent = todayReq.toLocaleString();
+      if (todayBytes) todayBytes.textContent = formatBytes(todayByt);
+      if (totalRequests) totalRequests.textContent = totalReq.toLocaleString();
+      if (totalBytes) totalBytes.textContent = formatBytes(totalByt);
+      
+      const githubTodayReq = document.getElementById('github-today-requests');
+      const dockerTodayReq = document.getElementById('docker-today-requests');
+      if (githubTodayReq) githubTodayReq.textContent = todayReq.toLocaleString();
+      if (dockerTodayReq) dockerTodayReq.textContent = todayReq.toLocaleString();
+      
+      updateQuotaUsage(todayReq, todayByt);
+      
       if (data.weekly && data.weekly.length > 0) {
         renderWeeklyChart(data.weekly);
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }
+  }
+
+  // 更新配额使用率
+  function updateQuotaUsage(requests, bytes) {
+    const QUOTA_REQUESTS = 1000000;
+    const QUOTA_BYTES = 100 * 1024 * 1024 * 1024;
+    
+    const reqPercent = (requests / QUOTA_REQUESTS) * 100;
+    const reqRemaining = QUOTA_REQUESTS - requests;
+    
+    const quotaBar = document.getElementById('quota-bar');
+    const quotaPercent = document.getElementById('quota-percentage');
+    const quotaUsed = document.getElementById('quota-used');
+    const quotaRemaining = document.getElementById('quota-remaining');
+    
+    if (quotaBar) quotaBar.style.width = Math.min(reqPercent, 100) + '%';
+    if (quotaPercent) quotaPercent.textContent = reqPercent.toFixed(2) + '%';
+    if (quotaUsed) quotaUsed.textContent = requests.toLocaleString();
+    if (quotaRemaining) quotaRemaining.textContent = '剩余 ' + reqRemaining.toLocaleString();
+    
+    const bytesPercent = (bytes / QUOTA_BYTES) * 100;
+    const bytesRemaining = QUOTA_BYTES - bytes;
+    
+    const bytesBar = document.getElementById('bytes-bar');
+    const bytesPercentEl = document.getElementById('bytes-percentage');
+    const bytesUsed = document.getElementById('bytes-used');
+    const bytesRemainingEl = document.getElementById('bytes-remaining');
+    
+    if (bytesBar) bytesBar.style.width = Math.min(bytesPercent, 100) + '%';
+    if (bytesPercentEl) bytesPercentEl.textContent = bytesPercent.toFixed(4) + '%';
+    if (bytesUsed) bytesUsed.textContent = formatBytes(bytes);
+    if (bytesRemainingEl) bytesRemainingEl.textContent = '剩余 ' + formatBytes(bytesRemaining);
+  }
+
+  // 格式化字节数
+  function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   // 渲染周统计图表
@@ -222,34 +387,22 @@ import Layout from '../layouts/Layout.astro';
     const weeklySection = document.getElementById('weekly-stats');
     
     if (!chartContainer || !labelsContainer) return;
-    
-    // 显示周统计区域
     if (weeklySection) weeklySection.classList.remove('hidden');
     
-    // 找出最大值用于缩放
     const maxRequests = Math.max(...weeklyData.map(d => d.requests), 1);
     
-    // 生成柱状图
     chartContainer.innerHTML = weeklyData.map(day => {
       const height = (day.requests / maxRequests) * 100;
-      const date = new Date(day.date);
-      const dayLabel = `${date.getMonth() + 1}/${date.getDate()}`;
-      
-      return `
-        <div class="flex flex-col items-center flex-1 group relative">
-          <div class="w-full bg-primary-container rounded-t-lg transition-all hover:bg-primary" 
-               style="height: ${Math.max(height, 2)}%"
-               title="${day.requests} 请求">
-          </div>
-        </div>
-      `;
+      return '<div class="flex flex-col items-center flex-1 group relative">' +
+        '<div class="w-full bg-primary-container rounded-t-lg transition-all hover:bg-primary" ' +
+        'style="height: ' + Math.max(height, 2) + '%" ' +
+        'title="' + day.requests + ' 请求"></div></div>';
     }).join('');
     
-    // 生成标签
     labelsContainer.innerHTML = weeklyData.map(day => {
       const date = new Date(day.date);
-      const dayLabel = `${date.getMonth() + 1}/${date.getDate()}`;
-      return `<span class="flex-1 text-center">${dayLabel}</span>`;
+      const dayLabel = (date.getMonth() + 1) + '/' + date.getDate();
+      return '<span class="flex-1 text-center">' + dayLabel + '</span>';
     }).join('');
   }
 
@@ -273,7 +426,8 @@ import Layout from '../layouts/Layout.astro';
 
   // 刷新所有数据
   function refreshAll() {
-    checkHealth();
+    checkGitHubStatus();
+    checkDockerStatus();
     fetchStats();
     fetchMetrics();
   }
