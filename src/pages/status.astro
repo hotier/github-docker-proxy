@@ -172,50 +172,6 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
     </div>
   </div>
 
-  <!-- 请求配额使用率 -->
-  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
-    <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
-      <span class="material-symbols-outlined text-primary">speed</span>
-      今日配额使用
-    </h2>
-    
-    <div class="space-y-4">
-      <!-- 请求数配额 -->
-      <div>
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-sm text-on-surface-variant">请求次数</span>
-          <span class="text-sm font-mono text-on-surface">
-            <span id="quota-used">0</span> / <span id="quota-total">1,000,000</span>
-          </span>
-        </div>
-        <div class="w-full bg-surface-container rounded-full h-3 overflow-hidden">
-          <div id="quota-bar" class="bg-primary h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-        <div class="flex justify-between mt-1 text-xs text-on-surface-variant">
-          <span id="quota-percentage">0%</span>
-          <span id="quota-remaining">剩余 1,000,000</span>
-        </div>
-      </div>
-
-      <!-- 流量配额 -->
-      <div>
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-sm text-on-surface-variant">流量使用</span>
-          <span class="text-sm font-mono text-on-surface">
-            <span id="bytes-used">0 B</span> / <span id="bytes-total">100 GB</span>
-          </span>
-        </div>
-        <div class="w-full bg-surface-container rounded-full h-3 overflow-hidden">
-          <div id="bytes-bar" class="bg-secondary h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-        <div class="flex justify-between mt-1 text-xs text-on-surface-variant">
-          <span id="bytes-percentage">0%</span>
-          <span id="bytes-remaining">剩余 100 GB</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- 实时监控 -->
   <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
     <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
@@ -379,52 +335,9 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
       const dockerTodayReq = data.today?.dockerRequests || 0;
       updateElement('github-today-requests-card', githubTodayReq.toLocaleString());
       updateElement('docker-today-requests-card', dockerTodayReq.toLocaleString());
-      
-      // 更新配额使用率（总计）
-      const totalTodayReq = (data.today?.githubRequests || 0) + (data.today?.dockerRequests || 0);
-      const totalTodayByt = (data.today?.githubBytes || 0) + (data.today?.dockerBytes || 0);
-      updateQuotaUsage(totalTodayReq, totalTodayByt);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }
-  }
-
-  // 辅助函数：更新元素文本
-  function updateElement(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text;
-  }
-
-  // 更新配额使用率
-  function updateQuotaUsage(requests, bytes) {
-    const QUOTA_REQUESTS = 1000000;
-    const QUOTA_BYTES = 100 * 1024 * 1024 * 1024;
-    
-    const reqPercent = (requests / QUOTA_REQUESTS) * 100;
-    const reqRemaining = QUOTA_REQUESTS - requests;
-    
-    const quotaBar = document.getElementById('quota-bar');
-    const quotaPercent = document.getElementById('quota-percentage');
-    const quotaUsed = document.getElementById('quota-used');
-    const quotaRemaining = document.getElementById('quota-remaining');
-    
-    if (quotaBar) quotaBar.style.width = Math.min(reqPercent, 100) + '%';
-    if (quotaPercent) quotaPercent.textContent = reqPercent.toFixed(2) + '%';
-    if (quotaUsed) quotaUsed.textContent = requests.toLocaleString();
-    if (quotaRemaining) quotaRemaining.textContent = '剩余 ' + reqRemaining.toLocaleString();
-    
-    const bytesPercent = (bytes / QUOTA_BYTES) * 100;
-    const bytesRemaining = QUOTA_BYTES - bytes;
-    
-    const bytesBar = document.getElementById('bytes-bar');
-    const bytesPercentEl = document.getElementById('bytes-percentage');
-    const bytesUsed = document.getElementById('bytes-used');
-    const bytesRemainingEl = document.getElementById('bytes-remaining');
-    
-    if (bytesBar) bytesBar.style.width = Math.min(bytesPercent, 100) + '%';
-    if (bytesPercentEl) bytesPercentEl.textContent = bytesPercent.toFixed(4) + '%';
-    if (bytesUsed) bytesUsed.textContent = formatBytes(bytes);
-    if (bytesRemainingEl) bytesRemainingEl.textContent = '剩余 ' + formatBytes(bytesRemaining);
   }
 
   // 格式化字节数
