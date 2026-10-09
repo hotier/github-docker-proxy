@@ -6,10 +6,11 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build:css": "tailwindcss -i ./src/styles/global.css -o ./dist/styles.css --minify",
-    "build": "astro build && npm run build:css",
+    "deploy": "npm run build && deno deploy --org hotier --app github-docker-proxy --prod",
+    "preview": "astro preview",
     "dev": "astro dev",
-    "preview": "astro preview"
+    "build:css": "tailwindcss -i ./src/styles/global.css -o ./dist/styles.css --minify",
+    "build": "astro build && npm run build:css"
   },
   "dependencies": {
     "@astrojs/react": "^7.0.1",

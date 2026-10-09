@@ -1,8 +1,0 @@
-{
-  "deploy": {
-    "org": "hotier",
-    "app": "github-docker-proxy",
-    "entrypoint": "./main.ts",
-    "static": "./static"
-  }
-}

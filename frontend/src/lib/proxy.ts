@@ -1,7 +1,7 @@
 // 增强的代理请求处理器（参考 hunshcn/gh-proxy）
 
-import { CONFIG, isWhitelisted, isBlacklisted, shouldUseJsDelivr, convertToJsDelivr } from "../config.ts";
-import { jsonResponse, filterHeaders, copyHeaders } from "../utils/helpers.ts";
+import { CONFIG, isWhitelisted, isBlacklisted, shouldUseJsDelivr, convertToJsDelivr } from "./config";
+import { jsonResponse, filterHeaders, copyHeaders } from "./helpers";
 
 // Hop-by-hop 头列表（参考 RFC 2616）
 const HOP_BY_HOP_HEADERS = [
@@ -274,3 +274,6 @@ function rewriteLocation(location: string): string {
     return location;
   }
 }
+
+
+

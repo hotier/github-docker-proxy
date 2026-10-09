@@ -1,4 +1,4 @@
-// 通用工具函数
+// 工具函数
 
 export function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data, null, 2), {

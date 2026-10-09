@@ -1,6 +1,6 @@
 // 速率限制中间件（使用 Deno KV）
 
-import { CONFIG } from "../config.ts";
+import { CONFIG } from "./config";
 
 // 简单的内存速率限制器（生产环境建议用 Deno KV）
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -72,3 +72,6 @@ export function getRateLimitStatus(clientIp: string): { limit: number; remaining
     resetTime: record.resetTime
   };
 }
+
+
+

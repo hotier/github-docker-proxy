@@ -1,4 +1,7 @@
 import type { APIRoute } from 'astro';
+import { proxyRequest, handleDockerProxy } from '../../lib/proxy';
+import { checkRateLimit } from '../../lib/rate-limit';
+import { withLogging } from '../../lib/logging';
 
 const UPSTREAMS: Record<string, string> = {
   '/api/gh/': 'https://github.com',
@@ -13,46 +16,31 @@ const UPSTREAMS: Record<string, string> = {
   '/api/quay/': 'https://quay.io',
 };
 
+const DOCKER_HUB = 'https://registry-1.docker.io';
+const DOCKER_AUTH = 'https://auth.docker.io';
+
 export const ALL: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
   const path = url.pathname;
   
+  // 速率限制检查
+  const rateLimitError = checkRateLimit(request);
+  if (rateLimitError) return rateLimitError;
+  
+  // Docker Registry 代理（/v2/ 路径）
+  if (path.startsWith('/v2/')) {
+    return withLogging(request, () => 
+      handleDockerProxy(request, path, url.search, DOCKER_HUB, DOCKER_AUTH)
+    );
+  }
+  
+  // GitHub 和其他代理
   for (const [prefix, upstream] of Object.entries(UPSTREAMS)) {
     if (path.startsWith(prefix)) {
       const targetPath = path.slice(prefix.length);
-      const targetUrl = upstream + '/' + targetPath + url.search;
-      
-      try {
-        const headers = new Headers(request.headers);
-        headers.delete('host');
-        headers.set('user-agent', 'github-docker-proxy/1.0');
-        
-        const resp = await fetch(targetUrl, {
-          method: request.method,
-          headers,
-          body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : undefined,
-          redirect: 'manual',
-        });
-        
-        if ([301, 302, 307, 308].includes(resp.status)) {
-          const location = resp.headers.get('location');
-          if (location) {
-            const newResp = new Response(null, { status: resp.status });
-            newResp.headers.set('location', location);
-            return newResp;
-          }
-        }
-        
-        return new Response(resp.body, {
-          status: resp.status,
-          headers: resp.headers
-        });
-      } catch (error) {
-        return new Response(
-          JSON.stringify({ error: 'Proxy Error', message: error.message }),
-          { status: 500, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
+      return withLogging(request, () => 
+        proxyRequest(request, upstream, targetPath, url.search)
+      );
     }
   }
   
