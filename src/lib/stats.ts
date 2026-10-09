@@ -47,7 +47,12 @@ const ANTI_SPAM_CONFIG = {
 
 // 初始化 SQLite
 function getSQLite(): Database.Database | null {
-  if (sqliteDb) return sqliteDb;
+  console.log('getSQLite called, existing db:', !!sqliteDb);
+  
+  if (sqliteDb) {
+    console.log('Returning existing database connection');
+    return sqliteDb;
+  }
   
   try {
     // 在 Astro SSR 中，使用 import.meta.env 或硬编码路径
@@ -96,6 +101,23 @@ function getSQLite(): Database.Database | null {
         last_updated INTEGER
       );
     `);
+    
+    // 创建累计统计表（永久保存）
+    sqliteDb.exec(`
+      CREATE TABLE IF NOT EXISTS cumulative_stats (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        total_main_visits INTEGER DEFAULT 0,
+        total_main_visitors INTEGER DEFAULT 0,
+        total_github_requests INTEGER DEFAULT 0,
+        total_docker_requests INTEGER DEFAULT 0,
+        total_github_bytes INTEGER DEFAULT 0,
+        total_docker_bytes INTEGER DEFAULT 0,
+        last_updated INTEGER
+      );
+      
+      INSERT OR IGNORE INTO cumulative_stats (id, last_updated)
+      VALUES (1, ?);
+    `).run(Date.now());
     
     console.log('SQLite database initialized at:', dbPath);
     return sqliteDb;
@@ -205,19 +227,28 @@ export async function trackMainVisit(
       // 如果应该统计，增加主站访问数
       if (shouldCount) {
         incrementDailyStat(today, 'main_visits', 1);
+        incrementCumulativeStat('total_main_visits', 1);
       }
       
       return { counted: shouldCount, isNewVisitor: false };
     } else {
       // 新访客，插入记录
+      console.log('New visitor, inserting record');
+      
       db.prepare(`
         INSERT INTO visits (visitor_hash, ip, user_agent, path, first_visit, last_visit, visit_count, date)
         VALUES (?, ?, ?, ?, ?, ?, 1, ?)
       `).run(visitorHash, ip, userAgent, path, now, now, today);
       
+      console.log('Visit record inserted');
+      
       // 增加独立访客数和访问数
       incrementDailyStat(today, 'main_visitors', 1);
       incrementDailyStat(today, 'main_visits', 1);
+      incrementCumulativeStat('total_main_visitors', 1);
+      incrementCumulativeStat('total_main_visits', 1);
+      
+      console.log('Stats incremented');
       
       return { counted: true, isNewVisitor: true };
     }
@@ -241,9 +272,13 @@ export async function trackProxyRequest(
     if (service === 'github') {
       incrementDailyStat(today, 'github_requests', 1);
       incrementDailyStat(today, 'github_bytes', bytes);
+      incrementCumulativeStat('total_github_requests', 1);
+      incrementCumulativeStat('total_github_bytes', bytes);
     } else {
       incrementDailyStat(today, 'docker_requests', 1);
       incrementDailyStat(today, 'docker_bytes', bytes);
+      incrementCumulativeStat('total_docker_requests', 1);
+      incrementCumulativeStat('total_docker_bytes', bytes);
     }
   } catch (error) {
     console.error('Failed to track proxy request:', error);
@@ -269,6 +304,30 @@ function incrementDailyStat(date: string, field: string, value: number) {
   `).run(value, Date.now(), date);
 }
 
+// 增加累计统计
+export function incrementCumulativeStat(field: string, value: number) {
+  console.log('=== incrementCumulativeStat called ===');
+  console.log('Field:', field, 'Value:', value);
+  const db = getSQLite();
+  if (!db) {
+    console.log('No DB connection for cumulative stat');
+    return;
+  }
+  
+  console.log('Incrementing cumulative stat:', field, value);
+  
+  try {
+    const result = db.prepare(`
+      UPDATE cumulative_stats 
+      SET ${field} = ${field} + ?, last_updated = ?
+      WHERE id = 1
+    `).run(value, Date.now());
+    console.log('Cumulative stat updated:', result);
+  } catch (error) {
+    console.error('Failed to update cumulative stat:', error);
+  }
+}
+
 // 获取统计数据
 export async function getStats() {
   const db = getSQLite();
@@ -282,16 +341,9 @@ export async function getStats() {
       SELECT * FROM daily_stats WHERE date = ?
     `).get(today) as any;
     
-    // 获取累计统计
-    const totalStats = db.prepare(`
-      SELECT 
-        SUM(main_visits) as main_visits,
-        SUM(main_visitors) as main_visitors,
-        SUM(github_requests) as github_requests,
-        SUM(docker_requests) as docker_requests,
-        SUM(github_bytes) as github_bytes,
-        SUM(docker_bytes) as docker_bytes
-      FROM daily_stats
+    // 获取累计统计（从 cumulative_stats 表）
+    const cumulativeStats = db.prepare(`
+      SELECT * FROM cumulative_stats WHERE id = 1
     `).get() as any;
     
     return {
@@ -305,12 +357,12 @@ export async function getStats() {
         dockerBytes: todayStats?.docker_bytes || 0
       },
       total: {
-        mainVisits: totalStats?.main_visits || 0,
-        mainVisitors: totalStats?.main_visitors || 0,
-        githubRequests: totalStats?.github_requests || 0,
-        dockerRequests: totalStats?.docker_requests || 0,
-        githubBytes: totalStats?.github_bytes || 0,
-        dockerBytes: totalStats?.docker_bytes || 0
+        mainVisits: cumulativeStats?.total_main_visits || 0,
+        mainVisitors: cumulativeStats?.total_main_visitors || 0,
+        githubRequests: cumulativeStats?.total_github_requests || 0,
+        dockerRequests: cumulativeStats?.total_docker_requests || 0,
+        githubBytes: cumulativeStats?.total_github_bytes || 0,
+        dockerBytes: cumulativeStats?.total_docker_bytes || 0
       }
     };
   } catch (error) {
@@ -358,4 +410,8 @@ export function formatBytes(bytes: number): string {
 export function formatNumber(num: number): string {
   return num.toLocaleString('zh-CN');
 }
+
+
+
+
 

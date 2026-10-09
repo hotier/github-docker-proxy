@@ -77,6 +77,8 @@ function getProxyService(path: string): 'github' | 'docker' | null {
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  console.log('=== MIDDLEWARE EXECUTED ===');
+  console.log('Path:', context.url.pathname);
   const { request, url } = context;
   const path = url.pathname;
   
@@ -113,3 +115,4 @@ export const onRequest = defineMiddleware(async (context, next) => {
   
   return next();
 });
+

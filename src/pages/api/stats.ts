@@ -1,9 +1,15 @@
 import type { APIRoute } from 'astro';
-import { getStats, formatBytes, formatNumber } from '../../lib/stats';
+import { getStats, formatBytes, formatNumber, trackMainVisit } from '../../lib/stats';
 import { withLogging } from '../../lib/logging';
 
 export const GET: APIRoute = async ({ request }) => {
   return withLogging(request, async () => {
+    // 追踪 API 访问（用于状态页刷新）
+    const clientIp = request.headers.get('x-forwarded-for') || 
+                     request.headers.get('x-real-ip') || 
+                     'unknown';
+    const userAgent = request.headers.get('user-agent') || '';
+    trackMainVisit(clientIp, userAgent, '/api/stats').catch(() => {});
     const stats = await getStats();
     
     return new Response(
@@ -38,3 +44,4 @@ export const GET: APIRoute = async ({ request }) => {
     );
   });
 };
+
