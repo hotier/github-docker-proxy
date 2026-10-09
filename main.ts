@@ -14,6 +14,7 @@ const UPSTREAMS: Record<string, string> = {
   "/ghraw/": "https://raw.githubusercontent.com",
   "/codeload/": "https://codeload.github.com",
   "/objects/": "https://objects.githubusercontent.com",
+  "/release-assets/": "https://release-assets.githubusercontent.com",
   "/api.github.com/": "https://api.github.com",
   "/avatars/": "https://avatars.githubusercontent.com",
   
@@ -306,6 +307,11 @@ function rewriteLocation(location: string): string {
     // GitHub 特殊处理：github.com/xxx/releases/download/... 会重定向到 objects.githubusercontent.com
     if (url.host === "objects.githubusercontent.com") {
       return "/objects/" + url.pathname + url.search;
+    }
+    
+    // GitHub Release 资产重定向到 release-assets.githubusercontent.com
+    if (url.host === "release-assets.githubusercontent.com") {
+      return "/release-assets/" + url.pathname + url.search;
     }
     
     return location;
