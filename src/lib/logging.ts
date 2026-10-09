@@ -34,6 +34,10 @@ export async function withLogging(
   try {
     const response = await handler();
     const duration = Date.now() - start;
+    const bytes = parseInt(response.headers.get("content-length") || "0");
+    
+    // 更新指标
+    updateMetrics(response.status, bytes, duration);
     
     logRequest({
       timestamp: new Date().toISOString(),
@@ -93,6 +97,8 @@ export function getMetrics() {
     statusCounts: Object.fromEntries(metrics.statusCounts),
   };
 }
+
+
 
 
 
