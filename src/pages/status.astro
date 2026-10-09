@@ -172,34 +172,6 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
     </div>
   </div>
 
-  <!-- 实时监控 -->
-  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
-    <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
-      <span class="material-symbols-outlined text-primary">monitoring</span>
-      实时监控
-    </h2>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-surface rounded-2xl p-4">
-        <div class="text-sm text-on-surface-variant mb-1">内存中请求数</div>
-        <div class="text-2xl font-medium text-on-surface" id="memory-requests">-</div>
-      </div>
-      <div class="bg-surface rounded-2xl p-4">
-        <div class="text-sm text-on-surface-variant mb-1">内存中错误数</div>
-        <div class="text-2xl font-medium text-on-surface" id="memory-errors">-</div>
-      </div>
-      <div class="bg-surface rounded-2xl p-4">
-        <div class="text-sm text-on-surface-variant mb-1">平均延迟</div>
-        <div class="text-2xl font-medium text-on-surface" id="avg-duration">-</div>
-      </div>
-    </div>
-
-    <button id="refresh-metrics" class="mt-4 px-4 py-2 bg-primary text-on-primary rounded-full text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2">
-      <span class="material-symbols-outlined text-sm">refresh</span>
-      刷新数据
-    </button>
-  </div>
-
   <!-- 高级配置 -->
   <div class="bg-surface-container-highest rounded-3xl p-6">
     <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
@@ -375,24 +347,6 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
     }).join('');
   }
 
-  // 获取内存监控指标
-  async function fetchMetrics() {
-    try {
-      const response = await fetch('/api/metrics');
-      const data = await response.json();
-      
-      const memoryRequests = document.getElementById('memory-requests');
-      const memoryErrors = document.getElementById('memory-errors');
-      const avgDuration = document.getElementById('avg-duration');
-      
-      if (memoryRequests) memoryRequests.textContent = data.totalRequests || 0;
-      if (memoryErrors) memoryErrors.textContent = data.totalErrors || 0;
-      if (avgDuration) avgDuration.textContent = (data.averageDuration || 0).toFixed(2) + 'ms';
-    } catch (error) {
-      console.error('Failed to fetch metrics:', error);
-    }
-  }
-
   // 获取 Deno Deploy Analytics
   async function fetchDenoAnalytics() {
     try {
@@ -417,7 +371,7 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
     checkDockerStatus();
     fetchStats();
     fetchDenoAnalytics();
-    fetchMetrics();
+    
   }
 
   // 刷新按钮
@@ -445,6 +399,6 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
   
   // 内存指标：30 秒（需要实时监控）
   setInterval(() => {
-    fetchMetrics();
+    
   }, 30000);
 </script>
