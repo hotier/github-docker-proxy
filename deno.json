@@ -2,15 +2,9 @@
   "name": "github-docker-proxy",
   "version": "0.1.0",
   "description": "Reverse proxy for GitHub and Docker registry on Deno Deploy",
+  "exports": "./main.ts",
   "tasks": {
     "deploy": "deployctl deploy --project=github-docker-proxy main.ts",
     "dev": "deno run --allow-net --allow-env main.ts"
-  },
-  "imports": {
-    "std/": "https://deno.land/std@0.208.0/"
-  },
-  "deploy": {
-    "project": "github-docker-proxy",
-    "entry": "./main.ts"
   }
 }

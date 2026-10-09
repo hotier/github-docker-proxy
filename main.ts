@@ -1,7 +1,8 @@
 // GitHub & Docker Registry Proxy on Deno Deploy
 // 免费额度：100万请求/天，128MB内存，无CPU时间限制
 
-import { serve } from "std/http/server.ts";
+// 使用 Deno.serve() (Deno Deploy 标准方式)
+// 不再需要导入 std/http/server.ts
 
 // ==================== 配置区 ====================
 // 设置访问密码（可选），环境变量 PROXY_PASSWORD
@@ -32,7 +33,7 @@ const DOCKER_AUTH = "https://auth.docker.io";
 
 // ==================== 主入口 ====================
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
