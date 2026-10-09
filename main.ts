@@ -67,7 +67,10 @@ Deno.serve(async (req: Request) => {
   for (const [prefix, upstream] of Object.entries(UPSTREAMS)) {
     if (path.startsWith(prefix)) {
       const targetPath = path.slice(prefix.length);
-      return proxyRequest(req, upstream, targetPath, url.search);
+      // 确保 upstream 以 / 结尾，targetPath 不以 / 开头
+      const normalizedUpstream = upstream.endsWith("/") ? upstream : upstream + "/";
+      const normalizedPath = targetPath.startsWith("/") ? targetPath.slice(1) : targetPath;
+      return proxyRequest(req, normalizedUpstream, normalizedPath, url.search);
     }
   }
 
