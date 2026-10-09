@@ -9,6 +9,8 @@ import { CONFIG } from "./src/config.ts";
 import { proxyRequest, handleDockerProxy } from "./src/handlers/proxy.ts";
 import { diagnosticEndpoint } from "./src/handlers/diag.ts";
 import { jsonResponse, checkAuth } from "./src/utils/helpers.ts";
+import { checkRateLimit, getRateLimitStatus } from "./src/middleware/rateLimit.ts";
+import { withLogging, getMetrics } from "./src/middleware/logging.ts";
 
 // ==================== 配置区 ====================
 
@@ -50,12 +52,30 @@ Deno.serve({ port: PORT }, async (req: Request) => {
 
   // 健康检查
   if (path === "/health") {
-    return jsonResponse({ status: "ok", timestamp: Date.now() });
+    return jsonResponse({ 
+      status: "ok", 
+      timestamp: Date.now(),
+      version: CONFIG.VERSION,
+      rateLimit: CONFIG.RATE_LIMIT > 0 ? "enabled" : "disabled"
+    });
   }
 
   // 诊断端点：测试外部连接
   if (path === "/diag") {
     return await diagnosticEndpoint();
+  }
+
+  // 监控指标端点
+  if (path === "/metrics") {
+    return jsonResponse(getMetrics());
+  }
+
+  // 速率限制状态查询
+  if (path === "/ratelimit") {
+    const clientIp = req.headers.get("x-forwarded-for") || 
+                     req.headers.get("x-real-ip") || 
+                     "unknown";
+    return jsonResponse(getRateLimitStatus(clientIp));
   }
 
   // 静态文件服务
@@ -75,9 +95,13 @@ Deno.serve({ port: PORT }, async (req: Request) => {
   const authError = checkAuth(req);
   if (authError) return authError;
 
+  // 速率限制检查
+  const rateLimitError = checkRateLimit(req);
+  if (rateLimitError) return rateLimitError;
+
   // 处理 Docker Hub 的 /v2/ 路径（无前缀）
   if (path.startsWith("/v2/")) {
-    return handleDockerProxy(req, path, url.search, DOCKER_HUB, DOCKER_AUTH);
+    return withLogging(req, () => handleDockerProxy(req, path, url.search, DOCKER_HUB, DOCKER_AUTH));
   }
 
   // 处理其他前缀
@@ -87,7 +111,7 @@ Deno.serve({ port: PORT }, async (req: Request) => {
       // 确保 upstream 以 / 结尾，targetPath 不以 / 开头
       const normalizedUpstream = upstream.endsWith("/") ? upstream : upstream + "/";
       const normalizedPath = targetPath.startsWith("/") ? targetPath.slice(1) : targetPath;
-      return proxyRequest(req, normalizedUpstream, normalizedPath, url.search);
+      return withLogging(req, () => proxyRequest(req, normalizedUpstream, normalizedPath, url.search));
     }
   }
 
