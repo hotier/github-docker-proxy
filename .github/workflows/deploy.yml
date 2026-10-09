@@ -1,0 +1,26 @@
+name: Deploy to Deno Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      
+      - name: Install deployctl
+        run: |
+          deno install --allow-all --no-check -r -f https://deno.land/x/deploy@1.10.0/deployctl.ts
+          echo "$HOME/.deno/bin" >> $GITHUB_PATH
+      
+      - name: Deploy to Deno Deploy
+        run: |
+          deployctl deploy --project=${{ secrets.DENO_PROJECT }} --token=${{ secrets.DENO_DEPLOY_TOKEN }} main.ts
