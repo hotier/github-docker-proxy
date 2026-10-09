@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build && node -e \"require('fs').cpSync('dist', '../static', {recursive: true})\"",
+    "dev:backend": "deno task dev:watch",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
