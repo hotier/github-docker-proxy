@@ -1,5 +1,8 @@
 ---
 // 基础布局组件 - 包含导航栏
+import GitHubIcon from '../components/icons/GitHubIcon.astro';
+import DockerIcon from '../components/icons/DockerIcon.astro';
+
 export interface Props {
   title: string;
   activeNav?: string;
@@ -10,10 +13,10 @@ const currentPath = Astro.url.pathname;
 
 // 导航项配置
 const navItems = [
-  { path: '/', label: '加速访问', icon: 'speed' },
-  { path: '/github', label: 'GitHub', icon: 'download' },
-  { path: '/docker', label: 'Docker', icon: 'dock' },
-  { path: '/status', label: '状态', icon: 'monitoring' },
+  { path: '/', label: '加速访问', icon: 'speed', type: 'material' },
+  { path: '/github', label: 'GitHub', icon: '', type: 'github' },
+  { path: '/docker', label: 'Docker', icon: '', type: 'docker' },
+  { path: '/status', label: '状态', icon: 'monitoring', type: 'material' },
 ];
 
 // 判断当前激活的导航项
@@ -65,7 +68,15 @@ const isActive = (path: string) => {
                     : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
                 ]}
               >
-                <span class="material-symbols-outlined text-lg">{item.icon}</span>
+                {item.type === 'material' && (
+                  <span class="material-symbols-outlined text-lg">{item.icon}</span>
+                )}
+                {item.type === 'github' && (
+                  <GitHubIcon size={20} class={isActive(item.path) ? 'text-on-primary' : 'text-current'} />
+                )}
+                {item.type === 'docker' && (
+                  <DockerIcon size={20} class={isActive(item.path) ? 'text-on-primary' : 'text-current'} />
+                )}
                 {item.label}
               </a>
             ))}
@@ -94,7 +105,15 @@ const isActive = (path: string) => {
                   : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
               ]}
             >
-              <span class="material-symbols-outlined">{item.icon}</span>
+              {item.type === 'material' && (
+                <span class="material-symbols-outlined">{item.icon}</span>
+              )}
+              {item.type === 'github' && (
+                <GitHubIcon size={20} class={isActive(item.path) ? 'text-on-primary' : 'text-current'} />
+              )}
+              {item.type === 'docker' && (
+                <DockerIcon size={20} class={isActive(item.path) ? 'text-on-primary' : 'text-current'} />
+              )}
               {item.label}
             </a>
           ))}
