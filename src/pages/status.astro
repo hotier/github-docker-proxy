@@ -278,6 +278,12 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
     }
   }
 
+  // 辅助函数：更新元素文本
+  function updateElement(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
   // 获取访问统计
   async function fetchStats() {
     try {
