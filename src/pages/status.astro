@@ -1,0 +1,185 @@
+---
+// 状态和配置页面
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="服务状态" activeNav="/status">
+  <!-- 页面标题 -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-medium text-on-surface mb-2">服务状态</h1>
+    <p class="text-on-surface-variant">实时监控服务运行状态和性能指标</p>
+  </div>
+
+  <!-- 状态卡片 -->
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6" id="status-cards">
+    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center">
+      <span class="material-symbols-outlined text-primary text-4xl mb-3">download</span>
+      <h3 class="text-sm font-medium text-on-surface mb-2">文件大小限制</h3>
+      <p class="text-base text-on-surface-variant">无限制</p>
+    </div>
+    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center">
+      <span class="material-symbols-outlined text-primary text-4xl mb-3">speed</span>
+      <h3 class="text-sm font-medium text-on-surface mb-2">请求配额</h3>
+      <p class="text-base text-on-surface-variant">100万/天</p>
+    </div>
+    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center">
+      <span class="material-symbols-outlined text-primary text-4xl mb-3">memory</span>
+      <h3 class="text-sm font-medium text-on-surface mb-2">内存限制</h3>
+      <p class="text-base text-on-surface-variant">128MB</p>
+    </div>
+    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center">
+      <span class="material-symbols-outlined text-primary text-4xl mb-3">public</span>
+      <h3 class="text-sm font-medium text-on-surface mb-2">边缘节点</h3>
+      <p class="text-base text-on-surface-variant">Deno Deploy</p>
+    </div>
+    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center cursor-pointer hover:bg-surface-container-high transition-colors" id="github-status-card">
+      <span class="material-symbols-outlined text-primary text-4xl mb-3">check_circle</span>
+      <h3 class="text-sm font-medium text-on-surface mb-2">GitHub 加速</h3>
+      <p class="text-base text-on-surface-variant" id="githubStatus">检测中...</p>
+    </div>
+    <div class="bg-surface-container-highest rounded-3xl p-5 flex flex-col items-center text-center cursor-pointer hover:bg-surface-container-high transition-colors" id="docker-status-card">
+      <span class="material-symbols-outlined text-primary text-4xl mb-3">check_circle</span>
+      <h3 class="text-sm font-medium text-on-surface mb-2">Docker 加速</h3>
+      <p class="text-base text-on-surface-variant" id="dockerStatus">检测中...</p>
+    </div>
+  </div>
+
+  <!-- 实时监控 -->
+  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
+    <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
+      <span class="material-symbols-outlined text-primary">monitoring</span>
+      实时监控
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-surface rounded-2xl p-4">
+        <div class="text-sm text-on-surface-variant mb-1">总请求数</div>
+        <div class="text-2xl font-medium text-on-surface" id="total-requests">-</div>
+      </div>
+      <div class="bg-surface rounded-2xl p-4">
+        <div class="text-sm text-on-surface-variant mb-1">错误数</div>
+        <div class="text-2xl font-medium text-on-surface" id="total-errors">-</div>
+      </div>
+      <div class="bg-surface rounded-2xl p-4">
+        <div class="text-sm text-on-surface-variant mb-1">平均延迟</div>
+        <div class="text-2xl font-medium text-on-surface" id="avg-duration">-</div>
+      </div>
+    </div>
+
+    <button id="refresh-metrics" class="mt-4 px-4 py-2 bg-primary text-on-primary rounded-full text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2">
+      <span class="material-symbols-outlined text-sm">refresh</span>
+      刷新数据
+    </button>
+  </div>
+
+  <!-- 高级配置 -->
+  <div class="bg-surface-container-highest rounded-3xl p-6">
+    <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
+      <span class="material-symbols-outlined text-primary">settings</span>
+      高级配置
+    </h2>
+
+    <div class="bg-error-container text-on-error-container rounded-2xl px-5 py-4 mb-5 flex gap-3 text-sm">
+      <span class="material-symbols-outlined text-xl shrink-0">warning</span>
+      <span>
+        <strong>鉴权保护</strong>：如需防止滥用，可在 Deno Deploy Dashboard 中设置 
+        <code class="font-mono bg-black/10 px-2 py-0.5 rounded">PROXY_PASSWORD</code> 
+        环境变量启用 Basic Auth。
+      </span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-surface rounded-2xl p-4">
+        <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-lg">key</span>
+          访问密码
+        </h3>
+        <code class="text-sm text-on-surface-variant font-mono">PROXY_PASSWORD</code>
+      </div>
+      <div class="bg-surface rounded-2xl p-4">
+        <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-lg">list</span>
+          白名单
+        </h3>
+        <code class="text-sm text-on-surface-variant font-mono">WHITE_LIST=["owner/*"]</code>
+      </div>
+      <div class="bg-surface rounded-2xl p-4">
+        <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-lg">block</span>
+          黑名单
+        </h3>
+        <code class="text-sm text-on-surface-variant font-mono">BLACK_LIST=["spam/repo"]</code>
+      </div>
+      <div class="bg-surface rounded-2xl p-4">
+        <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-lg">speed</span>
+          速率限制
+        </h3>
+        <code class="text-sm text-on-surface-variant font-mono">RATE_LIMIT=100</code>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // 检查服务状态
+  async function checkHealth() {
+    try {
+      const response = await fetch('/api/health');
+      const data = await response.json();
+      
+      const githubStatus = document.getElementById('githubStatus');
+      const dockerStatus = document.getElementById('dockerStatus');
+      
+      if (data.status === 'ok') {
+        if (githubStatus) githubStatus.textContent = '运行中';
+        if (dockerStatus) dockerStatus.textContent = '运行中';
+      } else {
+        if (githubStatus) githubStatus.textContent = '异常';
+        if (dockerStatus) dockerStatus.textContent = '异常';
+      }
+      
+      return data;
+    } catch (error) {
+      const githubStatus = document.getElementById('githubStatus');
+      const dockerStatus = document.getElementById('dockerStatus');
+      if (githubStatus) githubStatus.textContent = '异常';
+      if (dockerStatus) dockerStatus.textContent = '异常';
+      return null;
+    }
+  }
+
+  // 获取监控指标
+  async function fetchMetrics() {
+    try {
+      const response = await fetch('/api/metrics');
+      const data = await response.json();
+      
+      const totalRequests = document.getElementById('total-requests');
+      const totalErrors = document.getElementById('total-errors');
+      const avgDuration = document.getElementById('avg-duration');
+      
+      if (totalRequests) totalRequests.textContent = data.totalRequests || 0;
+      if (totalErrors) totalErrors.textContent = data.totalErrors || 0;
+      if (avgDuration) avgDuration.textContent = (data.averageDuration || 0).toFixed(2) + 'ms';
+    } catch (error) {
+      console.error('Failed to fetch metrics:', error);
+    }
+  }
+
+  // 刷新按钮
+  document.getElementById('refresh-metrics')?.addEventListener('click', () => {
+    checkHealth();
+    fetchMetrics();
+  });
+
+  // 初始加载
+  checkHealth();
+  fetchMetrics();
+  
+  // 每 30 秒自动刷新
+  setInterval(() => {
+    checkHealth();
+    fetchMetrics();
+  }, 30000);
+</script>

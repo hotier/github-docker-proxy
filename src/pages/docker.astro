@@ -1,0 +1,99 @@
+---
+// Docker 加速页面
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Docker 加速" activeNav="/docker">
+  <!-- 页面标题 -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-medium text-on-surface mb-2">Docker 加速</h1>
+    <p class="text-on-surface-variant">支持 Docker Hub、GHCR、GCR、Quay 等镜像仓库的加速拉取</p>
+  </div>
+
+  <!-- 配置说明 -->
+  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
+    <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
+      <span class="material-symbols-outlined text-primary">settings</span>
+      配置 Docker 镜像加速
+    </h2>
+
+    <div class="bg-primary-container text-on-primary-container rounded-2xl px-5 py-4 mb-5 flex gap-3 text-sm">
+      <span class="material-symbols-outlined text-xl shrink-0">info</span>
+      <span>配置 Docker 镜像加速器后，拉取 Docker Hub、GHCR、GCR、Quay 等镜像将自动通过代理加速。</span>
+    </div>
+
+    <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant mb-4">
+      <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+        <span class="text-sm font-medium text-on-surface">配置 daemon.json</span>
+        <button class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors">
+          <span class="material-symbols-outlined text-lg">content_copy</span>
+        </button>
+      </div>
+      <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+        <span class="text-on-surface-variant opacity-70"># /etc/docker/daemon.json</span><br>
+        {<br>
+        &nbsp;&nbsp;<span class="text-tertiary">"registry-mirrors"</span>: [<span class="text-tertiary">"{Astro.url.origin}"</span>]<br>
+        }
+      </div>
+    </div>
+
+    <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+      <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+        <span class="text-sm font-medium text-on-surface">重启 Docker 服务</span>
+        <button class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors">
+          <span class="material-symbols-outlined text-lg">content_copy</span>
+        </button>
+      </div>
+      <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+        <span class="text-on-surface-variant opacity-70"># 重启 Docker 服务</span><br>
+        <span class="text-primary font-semibold">sudo</span> systemctl daemon-reload<br>
+        <span class="text-primary font-semibold">sudo</span> systemctl restart docker<br><br>
+        <span class="text-on-surface-variant opacity-70"># 或者直接拉取镜像（无需配置）</span><br>
+        <span class="text-primary font-semibold">docker</span> pull <span class="text-tertiary">{Astro.url.origin}</span>/library/nginx:latest
+      </div>
+    </div>
+  </div>
+
+  <!-- 支持的 Registry -->
+  <div class="bg-surface-container-highest rounded-3xl p-6">
+    <h2 class="text-xl font-medium text-on-surface mb-4">支持的 Registry</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] text-center">/v2/</code>
+        <span class="text-on-surface-variant text-sm">Docker Hub (registry-1.docker.io)</span>
+      </div>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] text-center">/api/ghcr/</code>
+        <span class="text-on-surface-variant text-sm">GitHub Container Registry</span>
+      </div>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] text-center">/api/gcr/</code>
+        <span class="text-on-surface-variant text-sm">Google Container Registry</span>
+      </div>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] text-center">/api/k8s/</code>
+        <span class="text-on-surface-variant text-sm">Kubernetes Registry</span>
+      </div>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] text-center">/api/quay/</code>
+        <span class="text-on-surface-variant text-sm">Red Hat Quay</span>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // 复制功能
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const codeBlock = btn.closest('.bg-surface')?.querySelector('.font-mono');
+      if (codeBlock) {
+        navigator.clipboard.writeText(codeBlock.textContent || '');
+        btn.innerHTML = '<span class="material-symbols-outlined text-lg">check</span>';
+        setTimeout(() => {
+          btn.innerHTML = '<span class="material-symbols-outlined text-lg">content_copy</span>';
+        }, 2000);
+      }
+    });
+  });
+</script>

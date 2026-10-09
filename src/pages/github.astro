@@ -1,0 +1,171 @@
+---
+// GitHub 加速页面
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="GitHub 加速" activeNav="/github">
+  <!-- 页面标题 -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-medium text-on-surface mb-2">GitHub 加速</h1>
+    <p class="text-on-surface-variant">支持 Release、Git Clone、Raw 文件、源码归档的加速下载</p>
+  </div>
+
+  <!-- 使用场景标签页 -->
+  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
+    <div class="flex gap-1 bg-surface-container-high rounded-2xl p-1 w-fit mb-6">
+      <button class="tab-btn active px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="release">
+        Release 下载
+      </button>
+      <button class="tab-btn px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="clone">
+        Git Clone
+      </button>
+      <button class="tab-btn px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="raw">
+        Raw 文件
+      </button>
+      <button class="tab-btn px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="archive">
+        源码归档
+      </button>
+    </div>
+
+    <!-- Release 下载 -->
+    <div id="tab-release" class="tab-content">
+      <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+        <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+          <span class="text-sm font-medium text-on-surface">下载 Release 文件</span>
+          <button class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="release">
+            <span class="material-symbols-outlined text-lg">content_copy</span>
+          </button>
+        </div>
+        <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+          <span class="text-on-surface-variant opacity-70"># 原始链接</span><br>
+          <span class="text-primary font-semibold">curl</span> -L -o app.tar.gz <span class="text-tertiary">https://github.com/owner/repo/releases/download/v1.0/app.tar.gz</span><br><br>
+          <span class="text-on-surface-variant opacity-70"># 加速链接</span><br>
+          <span class="text-primary font-semibold">curl</span> -L -o app.tar.gz <span class="text-tertiary">{Astro.url.origin}/api/gh/owner/repo/releases/download/v1.0/app.tar.gz</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Git Clone -->
+    <div id="tab-clone" class="tab-content hidden">
+      <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+        <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+          <span class="text-sm font-medium text-on-surface">克隆 Git 仓库</span>
+          <button class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="clone">
+            <span class="material-symbols-outlined text-lg">content_copy</span>
+          </button>
+        </div>
+        <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+          <span class="text-on-surface-variant opacity-70"># 原始命令</span><br>
+          <span class="text-primary font-semibold">git</span> clone https://github.com/owner/repo.git<br><br>
+          <span class="text-on-surface-variant opacity-70"># 加速命令</span><br>
+          <span class="text-primary font-semibold">git</span> clone <span class="text-tertiary">{Astro.url.origin}/api/gh/owner/repo.git</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Raw 文件 -->
+    <div id="tab-raw" class="tab-content hidden">
+      <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+        <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+          <span class="text-sm font-medium text-on-surface">下载 Raw 文件</span>
+          <button class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="raw">
+            <span class="material-symbols-outlined text-lg">content_copy</span>
+          </button>
+        </div>
+        <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+          <span class="text-on-surface-variant opacity-70"># 原始链接</span><br>
+          <span class="text-primary font-semibold">curl</span> <span class="text-tertiary">https://raw.githubusercontent.com/owner/repo/main/README.md</span><br><br>
+          <span class="text-on-surface-variant opacity-70"># 加速链接</span><br>
+          <span class="text-primary font-semibold">curl</span> <span class="text-tertiary">{Astro.url.origin}/api/ghraw/owner/repo/main/README.md</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 源码归档 -->
+    <div id="tab-archive" class="tab-content hidden">
+      <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+        <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+          <span class="text-sm font-medium text-on-surface">下载源码归档</span>
+          <button class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="archive">
+            <span class="material-symbols-outlined text-lg">content_copy</span>
+          </button>
+        </div>
+        <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+          <span class="text-on-surface-variant opacity-70"># 下载 ZIP 归档</span><br>
+          <span class="text-primary font-semibold">curl</span> -L -o repo.zip <span class="text-tertiary">{Astro.url.origin}/api/gh/owner/repo/archive/refs/heads/main.zip</span><br><br>
+          <span class="text-on-surface-variant opacity-70"># 下载 TAR.GZ 归档</span><br>
+          <span class="text-primary font-semibold">curl</span> -L -o repo.tar.gz <span class="text-tertiary">{Astro.url.origin}/api/gh/owner/repo/archive/refs/heads/main.tar.gz</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 支持的端点 -->
+  <div class="bg-surface-container-highest rounded-3xl p-6">
+    <h2 class="text-xl font-medium text-on-surface mb-4">支持的端点</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/gh/</code>
+        <span class="text-on-surface-variant text-sm">github.com 全站代理</span>
+      </div>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/ghraw/</code>
+        <span class="text-on-surface-variant text-sm">raw.githubusercontent.com</span>
+      </div>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/codeload/</code>
+        <span class="text-on-surface-variant text-sm">codeload.github.com</span>
+      </div>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/objects/</code>
+        <span class="text-on-surface-variant text-sm">objects.githubusercontent.com</span>
+      </div>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/release-assets/</code>
+        <span class="text-on-surface-variant text-sm">release-assets.githubusercontent.com</span>
+      </div>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/api.github.com/</code>
+        <span class="text-on-surface-variant text-sm">api.github.com API 代理</span>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // 标签页切换
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.dataset.tab;
+      
+      // 更新按钮状态
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-primary', 'text-on-primary');
+        b.classList.add('text-on-surface-variant');
+      });
+      btn.classList.remove('text-on-surface-variant');
+      btn.classList.add('bg-primary', 'text-on-primary');
+      
+      // 切换内容
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      document.getElementById('tab-' + tabId)?.classList.remove('hidden');
+    });
+  });
+  
+  // 初始化第一个标签页
+  document.querySelector('.tab-btn')?.classList.add('bg-primary', 'text-on-primary');
+  
+  // 复制功能
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const codeBlock = btn.closest('.bg-surface')?.querySelector('.font-mono');
+      if (codeBlock) {
+        navigator.clipboard.writeText(codeBlock.textContent || '');
+        btn.innerHTML = '<span class="material-symbols-outlined text-lg">check</span>';
+        setTimeout(() => {
+          btn.innerHTML = '<span class="material-symbols-outlined text-lg">content_copy</span>';
+        }, 2000);
+      }
+    });
+  });
+</script>
