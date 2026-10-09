@@ -42,3 +42,7 @@ deno.lock
 
 # Testing
 coverage/
+
+# Frontend dependencies
+frontend/node_modules/
+frontend/dist/
