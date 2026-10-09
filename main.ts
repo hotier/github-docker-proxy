@@ -5,6 +5,7 @@
 // 支持本地开发：deno task dev 或 deno run --allow-net --allow-env main.ts
 
 import { serveStatic } from "./src/utils/static.ts";
+import { CONFIG } from "./src/config.ts";
 import { proxyRequest, handleDockerProxy } from "./src/handlers/proxy.ts";
 import { diagnosticEndpoint } from "./src/handlers/diag.ts";
 import { jsonResponse, checkAuth } from "./src/utils/helpers.ts";
@@ -95,7 +96,7 @@ Deno.serve({ port: PORT }, async (req: Request) => {
 
 // ==================== 启动信息 ====================
 
-console.log(`🚀 GitHub & Docker Proxy`);
+console.log(`🚀 GitHub & Docker Proxy v${CONFIG.VERSION}`);
 console.log(`📡 Listening on http://localhost:${PORT}`);
 console.log(`🌍 Environment: ${Deno.env.get("DENO_DEPLOYMENT_ID") ? "Deno Deploy" : "Local"}`);
 console.log(`\n📋 Available endpoints:`);
@@ -109,3 +110,4 @@ console.log(`\n💡 Tips:`);
 console.log(`  - Press Ctrl+C to stop`);
 console.log(`  - Set PORT env to change port (default: 8000)`);
 console.log(`  - Set PROXY_PASSWORD env to enable auth\n`);
+
