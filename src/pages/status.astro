@@ -90,83 +90,27 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
       访问统计
     </h2>
     
-    <!-- GitHub 统计 -->
-    <div class="mb-4">
-      <h3 class="text-sm font-medium text-on-surface-variant mb-3 flex items-center gap-2">
-        <GitHubIcon size={16} class="text-on-surface-variant" />
-        GitHub 加速
-      </h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">今日访问</div>
-          <div class="text-2xl font-medium text-on-surface" id="github-today-requests">-</div>
-        </div>
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">今日流量</div>
-          <div class="text-2xl font-medium text-primary" id="github-today-bytes">-</div>
-        </div>
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">累计访问</div>
-          <div class="text-2xl font-medium text-on-surface" id="github-total-requests">-</div>
-        </div>
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">累计流量</div>
-          <div class="text-2xl font-medium text-primary" id="github-total-bytes">-</div>
-        </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-surface rounded-2xl p-4">
+        <div class="text-sm text-on-surface-variant mb-1">今日访问</div>
+        <div class="text-2xl font-medium text-on-surface" id="total-today-requests">-</div>
       </div>
-    </div>
-
-    <!-- Docker 统计 -->
-    <div class="mb-4">
-      <h3 class="text-sm font-medium text-on-surface-variant mb-3 flex items-center gap-2">
-        <DockerIcon size={16} class="text-on-surface-variant" />
-        Docker 加速
-      </h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">今日访问</div>
-          <div class="text-2xl font-medium text-on-surface" id="docker-today-requests">-</div>
-        </div>
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">今日流量</div>
-          <div class="text-2xl font-medium text-primary" id="docker-today-bytes">-</div>
-        </div>
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">累计访问</div>
-          <div class="text-2xl font-medium text-on-surface" id="docker-total-requests">-</div>
-        </div>
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">累计流量</div>
-          <div class="text-2xl font-medium text-primary" id="docker-total-bytes">-</div>
-        </div>
+      <div class="bg-surface rounded-2xl p-4">
+        <div class="text-sm text-on-surface-variant mb-1">今日流量</div>
+        <div class="text-2xl font-medium text-primary" id="total-today-bytes">-</div>
       </div>
-    </div>
-
-    <!-- 总计统计 -->
-    <div>
-      <h3 class="text-sm font-medium text-on-surface-variant mb-3">总计</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">今日访问</div>
-          <div class="text-2xl font-medium text-on-surface" id="total-today-requests">-</div>
-        </div>
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">今日流量</div>
-          <div class="text-2xl font-medium text-primary" id="total-today-bytes">-</div>
-        </div>
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">累计访问</div>
-          <div class="text-2xl font-medium text-on-surface" id="total-requests">-</div>
-        </div>
-        <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">累计流量</div>
-          <div class="text-2xl font-medium text-primary" id="total-bytes">-</div>
-        </div>
+      <div class="bg-surface rounded-2xl p-4">
+        <div class="text-sm text-on-surface-variant mb-1">累计访问</div>
+        <div class="text-2xl font-medium text-on-surface" id="total-requests">-</div>
+      </div>
+      <div class="bg-surface rounded-2xl p-4">
+        <div class="text-sm text-on-surface-variant mb-1">累计流量</div>
+        <div class="text-2xl font-medium text-primary" id="total-bytes">-</div>
       </div>
     </div>
 
     <!-- 最近 7 天趋势 -->
-    <div id="weekly-stats" class="hidden">
+    <div id="weekly-stats" class="hidden mt-6">
       <h3 class="text-sm font-medium text-on-surface-variant mb-3">最近 7 天趋势</h3>
       <div class="bg-surface rounded-2xl p-4">
         <div id="weekly-chart" class="flex items-end justify-between gap-2 h-32">
