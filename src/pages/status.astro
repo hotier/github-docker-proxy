@@ -234,11 +234,10 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
 <script>
   // 检查 GitHub 节点状态
   async function checkGitHubStatus() {
-    const start = Date.now();
     try {
-      const response = await fetch('/api/gh/octocat/Hello-World', { method: 'HEAD' });
-      const duration = Date.now() - start;
-      updateStatusUI('github', true, duration);
+      const response = await fetch('/api/status/github');
+      const data = await response.json();
+      updateStatusUI('github', data.status === 'ok', data.responseTime || 0);
     } catch (error) {
       updateStatusUI('github', false, 0);
     }
@@ -246,11 +245,10 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
 
   // 检查 Docker 节点状态
   async function checkDockerStatus() {
-    const start = Date.now();
     try {
-      const response = await fetch('/v2/');
-      const duration = Date.now() - start;
-      updateStatusUI('docker', response.ok || response.status === 401, duration);
+      const response = await fetch('/api/status/docker');
+      const data = await response.json();
+      updateStatusUI('docker', data.status === 'ok', data.responseTime || 0);
     } catch (error) {
       updateStatusUI('docker', false, 0);
     }

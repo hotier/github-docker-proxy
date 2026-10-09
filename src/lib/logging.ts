@@ -41,19 +41,34 @@ export async function withLogging(
     updateMetrics(response.status, bytes, duration);
     
     // 更新统计数据（异步，不阻塞响应）
-    // 只统计代理请求（/api/gh/*, /api/ghraw/*, /v2/* 等）
+    // 只统计真正的代理请求（代理到 GitHub/Docker 的请求）
     const path = url.pathname;
-    const isProxyRequest = path.startsWith('/api/gh/') || 
-                          path.startsWith('/api/ghraw/') || 
-                          path.startsWith('/api/codeload/') ||
-                          path.startsWith('/api/objects/') ||
-                          path.startsWith('/api/release-assets/') ||
-                          path.startsWith('/api/api.github.com/') ||
-                          path.startsWith('/v2/') ||
-                          path.startsWith('/api/ghcr/') ||
-                          path.startsWith('/api/gcr/') ||
-                          path.startsWith('/api/k8s/') ||
-                          path.startsWith('/api/quay/');
+    
+    // 排除的 API 路径（不统计）
+    const excludePaths = [
+      '/api/health',
+      '/api/metrics',
+      '/api/stats',
+      '/api/ratelimit',
+      '/api/status/'  // 状态检查 API 不统计
+    ];
+    
+    // 检查是否是代理请求
+    const isProxyRequest = (
+      // GitHub 代理
+      path.startsWith('/api/gh/') ||
+      path.startsWith('/api/ghraw/') ||
+      path.startsWith('/api/codeload/') ||
+      path.startsWith('/api/objects/') ||
+      path.startsWith('/api/release-assets/') ||
+      path.startsWith('/api/api.github.com/') ||
+      // Docker 代理
+      path.startsWith('/v2/') ||
+      path.startsWith('/api/ghcr/') ||
+      path.startsWith('/api/gcr/') ||
+      path.startsWith('/api/k8s/') ||
+      path.startsWith('/api/quay/')
+    ) && !excludePaths.some(exclude => path.startsWith(exclude));
     
     if (isProxyRequest) {
       updateStats(path, bytes).catch(err => console.error('Stats update failed:', err));
