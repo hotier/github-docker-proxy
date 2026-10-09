@@ -1,4 +1,5 @@
 // 日志和监控中间件
+import { updateStats } from './stats';
 
 interface LogEntry {
   timestamp: string;
@@ -39,12 +40,15 @@ export async function withLogging(
     // 更新指标
     updateMetrics(response.status, bytes, duration);
     
+    // 更新统计数据（异步，不阻塞响应）
+    updateStats(bytes).catch(err => console.error('Stats update failed:', err));
+    
     logRequest({
       timestamp: new Date().toISOString(),
       method: req.method,
       path: url.pathname,
       status: response.status,
-      bytes: parseInt(response.headers.get("content-length") || "0"),
+      bytes,
       duration,
       ip: clientIp,
       userAgent: req.headers.get("user-agent") || undefined
@@ -53,6 +57,9 @@ export async function withLogging(
     return response;
   } catch (error) {
     const duration = Date.now() - start;
+    
+    // 更新指标（错误）
+    updateMetrics(500, 0, duration);
     
     logRequest({
       timestamp: new Date().toISOString(),

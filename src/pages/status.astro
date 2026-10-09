@@ -44,6 +44,46 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
+  <!-- 访问统计 -->
+  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
+    <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
+      <span class="material-symbols-outlined text-primary">analytics</span>
+      访问统计
+    </h2>
+    
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-surface rounded-2xl p-4">
+        <div class="text-sm text-on-surface-variant mb-1">今日访问</div>
+        <div class="text-2xl font-medium text-on-surface" id="today-requests">-</div>
+      </div>
+      <div class="bg-surface rounded-2xl p-4">
+        <div class="text-sm text-on-surface-variant mb-1">今日流量</div>
+        <div class="text-2xl font-medium text-primary" id="today-bytes">-</div>
+      </div>
+      <div class="bg-surface rounded-2xl p-4">
+        <div class="text-sm text-on-surface-variant mb-1">累计访问</div>
+        <div class="text-2xl font-medium text-on-surface" id="total-requests">-</div>
+      </div>
+      <div class="bg-surface rounded-2xl p-4">
+        <div class="text-sm text-on-surface-variant mb-1">累计流量</div>
+        <div class="text-2xl font-medium text-primary" id="total-bytes">-</div>
+      </div>
+    </div>
+
+    <!-- 最近 7 天趋势 -->
+    <div id="weekly-stats" class="hidden">
+      <h3 class="text-sm font-medium text-on-surface-variant mb-3">最近 7 天趋势</h3>
+      <div class="bg-surface rounded-2xl p-4">
+        <div id="weekly-chart" class="flex items-end justify-between gap-2 h-32">
+          <!-- 动态生成柱状图 -->
+        </div>
+        <div id="weekly-labels" class="flex justify-between gap-2 mt-2 text-xs text-on-surface-variant">
+          <!-- 动态生成标签 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 实时监控 -->
   <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
     <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
@@ -53,12 +93,12 @@ import Layout from '../layouts/Layout.astro';
     
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-surface rounded-2xl p-4">
-        <div class="text-sm text-on-surface-variant mb-1">总请求数</div>
-        <div class="text-2xl font-medium text-on-surface" id="total-requests">-</div>
+        <div class="text-sm text-on-surface-variant mb-1">内存中请求数</div>
+        <div class="text-2xl font-medium text-on-surface" id="memory-requests">-</div>
       </div>
       <div class="bg-surface rounded-2xl p-4">
-        <div class="text-sm text-on-surface-variant mb-1">错误数</div>
-        <div class="text-2xl font-medium text-on-surface" id="total-errors">-</div>
+        <div class="text-sm text-on-surface-variant mb-1">内存中错误数</div>
+        <div class="text-2xl font-medium text-on-surface" id="memory-errors">-</div>
       </div>
       <div class="bg-surface rounded-2xl p-4">
         <div class="text-sm text-on-surface-variant mb-1">平均延迟</div>
@@ -149,37 +189,101 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
-  // 获取监控指标
+  // 获取访问统计
+  async function fetchStats() {
+    try {
+      const response = await fetch('/api/stats');
+      const data = await response.json();
+      
+      // 更新统计卡片
+      const todayRequests = document.getElementById('today-requests');
+      const todayBytes = document.getElementById('today-bytes');
+      const totalRequests = document.getElementById('total-requests');
+      const totalBytes = document.getElementById('total-bytes');
+      
+      if (todayRequests) todayRequests.textContent = data.formatted?.todayRequests || data.today?.requests || 0;
+      if (todayBytes) todayBytes.textContent = data.formatted?.todayBytes || '0 B';
+      if (totalRequests) totalRequests.textContent = data.formatted?.totalRequests || data.total?.requests || 0;
+      if (totalBytes) totalBytes.textContent = data.formatted?.totalBytes || '0 B';
+      
+      // 渲染周统计图表
+      if (data.weekly && data.weekly.length > 0) {
+        renderWeeklyChart(data.weekly);
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    }
+  }
+
+  // 渲染周统计图表
+  function renderWeeklyChart(weeklyData) {
+    const chartContainer = document.getElementById('weekly-chart');
+    const labelsContainer = document.getElementById('weekly-labels');
+    const weeklySection = document.getElementById('weekly-stats');
+    
+    if (!chartContainer || !labelsContainer) return;
+    
+    // 显示周统计区域
+    if (weeklySection) weeklySection.classList.remove('hidden');
+    
+    // 找出最大值用于缩放
+    const maxRequests = Math.max(...weeklyData.map(d => d.requests), 1);
+    
+    // 生成柱状图
+    chartContainer.innerHTML = weeklyData.map(day => {
+      const height = (day.requests / maxRequests) * 100;
+      const date = new Date(day.date);
+      const dayLabel = `${date.getMonth() + 1}/${date.getDate()}`;
+      
+      return `
+        <div class="flex flex-col items-center flex-1 group relative">
+          <div class="w-full bg-primary-container rounded-t-lg transition-all hover:bg-primary" 
+               style="height: ${Math.max(height, 2)}%"
+               title="${day.requests} 请求">
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    // 生成标签
+    labelsContainer.innerHTML = weeklyData.map(day => {
+      const date = new Date(day.date);
+      const dayLabel = `${date.getMonth() + 1}/${date.getDate()}`;
+      return `<span class="flex-1 text-center">${dayLabel}</span>`;
+    }).join('');
+  }
+
+  // 获取内存监控指标
   async function fetchMetrics() {
     try {
       const response = await fetch('/api/metrics');
       const data = await response.json();
       
-      const totalRequests = document.getElementById('total-requests');
-      const totalErrors = document.getElementById('total-errors');
+      const memoryRequests = document.getElementById('memory-requests');
+      const memoryErrors = document.getElementById('memory-errors');
       const avgDuration = document.getElementById('avg-duration');
       
-      if (totalRequests) totalRequests.textContent = data.totalRequests || 0;
-      if (totalErrors) totalErrors.textContent = data.totalErrors || 0;
+      if (memoryRequests) memoryRequests.textContent = data.totalRequests || 0;
+      if (memoryErrors) memoryErrors.textContent = data.totalErrors || 0;
       if (avgDuration) avgDuration.textContent = (data.averageDuration || 0).toFixed(2) + 'ms';
     } catch (error) {
       console.error('Failed to fetch metrics:', error);
     }
   }
 
-  // 刷新按钮
-  document.getElementById('refresh-metrics')?.addEventListener('click', () => {
+  // 刷新所有数据
+  function refreshAll() {
     checkHealth();
+    fetchStats();
     fetchMetrics();
-  });
+  }
+
+  // 刷新按钮
+  document.getElementById('refresh-metrics')?.addEventListener('click', refreshAll);
 
   // 初始加载
-  checkHealth();
-  fetchMetrics();
+  refreshAll();
   
   // 每 30 秒自动刷新
-  setInterval(() => {
-    checkHealth();
-    fetchMetrics();
-  }, 30000);
+  setInterval(refreshAll, 30000);
 </script>

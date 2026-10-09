@@ -46,3 +46,6 @@ coverage/
 # Frontend dependencies
 frontend/node_modules/
 frontend/dist/
+
+# SQLite database
+data/
