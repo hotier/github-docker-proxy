@@ -1,5 +1,5 @@
 // 日志和监控中间件
-import { updateStats } from './stats';
+
 
 interface LogEntry {
   timestamp: string;
@@ -20,6 +20,86 @@ export function logRequest(entry: LogEntry): void {
   console.log(logLine);
 }
 
+// 判断是否是主站页面访问
+function isMainPageVisit(path: string): boolean {
+  // 只统计主站页面访问，不统计 API 和静态资源
+  return (
+    path === '/' ||
+    path === '/index.html' ||
+    path === '/github' ||
+    path === '/docker' ||
+    path === '/status'
+  );
+}
+
+// 判断是否是代理请求
+function isProxyRequest(path: string): boolean {
+  // 排除的 API 路径
+  const excludePaths = [
+    '/api/health',
+    '/api/metrics',
+    '/api/stats',
+    '/api/ratelimit',
+    '/api/status/'
+  ];
+  
+  // 检查是否在排除列表中
+  if (excludePaths.some(exclude => path.startsWith(exclude))) {
+    return false;
+  }
+  
+  // GitHub 代理
+  const githubPaths = [
+    '/api/gh/',
+    '/api/ghraw/',
+    '/api/codeload/',
+    '/api/objects/',
+    '/api/release-assets/',
+    '/api/api.github.com/'
+  ];
+  
+  // Docker 代理
+  const dockerPaths = [
+    '/v2/',
+    '/api/ghcr/',
+    '/api/gcr/',
+    '/api/k8s/',
+    '/api/quay/'
+  ];
+  
+  return [...githubPaths, ...dockerPaths].some(prefix => path.startsWith(prefix));
+}
+
+// 判断代理服务类型
+function getProxyService(path: string): 'github' | 'docker' | null {
+  const githubPaths = [
+    '/api/gh/',
+    '/api/ghraw/',
+    '/api/codeload/',
+    '/api/objects/',
+    '/api/release-assets/',
+    '/api/api.github.com/'
+  ];
+  
+  const dockerPaths = [
+    '/v2/',
+    '/api/ghcr/',
+    '/api/gcr/',
+    '/api/k8s/',
+    '/api/quay/'
+  ];
+  
+  if (githubPaths.some(prefix => path.startsWith(prefix))) {
+    return 'github';
+  }
+  
+  if (dockerPaths.some(prefix => path.startsWith(prefix))) {
+    return 'docker';
+  }
+  
+  return null;
+}
+
 // 请求日志中间件
 export async function withLogging(
   req: Request,
@@ -27,10 +107,12 @@ export async function withLogging(
 ): Promise<Response> {
   const start = Date.now();
   const url = new URL(req.url);
+  const path = url.pathname;
   
   const clientIp = req.headers.get("x-forwarded-for") || 
                    req.headers.get("x-real-ip") || 
                    "unknown";
+  const userAgent = req.headers.get("user-agent") || "";
   
   try {
     const response = await handler();
@@ -40,49 +122,16 @@ export async function withLogging(
     // 更新指标
     updateMetrics(response.status, bytes, duration);
     
-    // 更新统计数据（异步，不阻塞响应）
-    // 只统计真正的代理请求（代理到 GitHub/Docker 的请求）
-    const path = url.pathname;
-    
-    // 排除的 API 路径（不统计）
-    const excludePaths = [
-      '/api/health',
-      '/api/metrics',
-      '/api/stats',
-      '/api/ratelimit',
-      '/api/status/'  // 状态检查 API 不统计
-    ];
-    
-    // 检查是否是代理请求
-    const isProxyRequest = (
-      // GitHub 代理
-      path.startsWith('/api/gh/') ||
-      path.startsWith('/api/ghraw/') ||
-      path.startsWith('/api/codeload/') ||
-      path.startsWith('/api/objects/') ||
-      path.startsWith('/api/release-assets/') ||
-      path.startsWith('/api/api.github.com/') ||
-      // Docker 代理
-      path.startsWith('/v2/') ||
-      path.startsWith('/api/ghcr/') ||
-      path.startsWith('/api/gcr/') ||
-      path.startsWith('/api/k8s/') ||
-      path.startsWith('/api/quay/')
-    ) && !excludePaths.some(exclude => path.startsWith(exclude));
-    
-    if (isProxyRequest) {
-      updateStats(path, bytes).catch(err => console.error('Stats update failed:', err));
-    }
-    
+
     logRequest({
       timestamp: new Date().toISOString(),
       method: req.method,
-      path: url.pathname,
+      path: path,
       status: response.status,
       bytes,
       duration,
       ip: clientIp,
-      userAgent: req.headers.get("user-agent") || undefined
+      userAgent
     });
     
     return response;
@@ -95,11 +144,11 @@ export async function withLogging(
     logRequest({
       timestamp: new Date().toISOString(),
       method: req.method,
-      path: url.pathname,
+      path: path,
       status: 500,
       duration,
       ip: clientIp,
-      userAgent: req.headers.get("user-agent") || undefined,
+      userAgent,
       error: error.message
     });
     
@@ -135,8 +184,5 @@ export function getMetrics() {
     statusCounts: Object.fromEntries(metrics.statusCounts),
   };
 }
-
-
-
 
 

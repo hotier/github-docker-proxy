@@ -90,22 +90,84 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
       访问统计
     </h2>
     
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-surface rounded-2xl p-4">
-        <div class="text-sm text-on-surface-variant mb-1">今日访问</div>
-        <div class="text-2xl font-medium text-on-surface" id="total-today-requests">-</div>
+    <!-- 主站访问统计 -->
+    <div class="mb-6">
+      <h3 class="text-sm font-medium text-on-surface-variant mb-3">主站访问</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="text-sm text-on-surface-variant mb-1">今日访问</div>
+          <div class="text-2xl font-medium text-on-surface" id="today-main-visits">-</div>
+        </div>
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="text-sm text-on-surface-variant mb-1">今日访客</div>
+          <div class="text-2xl font-medium text-primary" id="today-main-visitors">-</div>
+        </div>
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="text-sm text-on-surface-variant mb-1">累计访问</div>
+          <div class="text-2xl font-medium text-on-surface" id="total-main-visits">-</div>
+        </div>
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="text-sm text-on-surface-variant mb-1">累计访客</div>
+          <div class="text-2xl font-medium text-primary" id="total-main-visitors">-</div>
+        </div>
       </div>
-      <div class="bg-surface rounded-2xl p-4">
-        <div class="text-sm text-on-surface-variant mb-1">今日流量</div>
-        <div class="text-2xl font-medium text-primary" id="total-today-bytes">-</div>
-      </div>
-      <div class="bg-surface rounded-2xl p-4">
-        <div class="text-sm text-on-surface-variant mb-1">累计访问</div>
-        <div class="text-2xl font-medium text-on-surface" id="total-requests">-</div>
-      </div>
-      <div class="bg-surface rounded-2xl p-4">
-        <div class="text-sm text-on-surface-variant mb-1">累计流量</div>
-        <div class="text-2xl font-medium text-primary" id="total-bytes">-</div>
+    </div>
+
+    <!-- 服务加速统计 -->
+    <div>
+      <h3 class="text-sm font-medium text-on-surface-variant mb-3">服务加速</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- GitHub 加速 -->
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <GitHubIcon size={20} class="text-on-surface" />
+            <span class="text-sm font-medium text-on-surface">GitHub 加速</span>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-xs text-on-surface-variant mb-1">今日请求</div>
+              <div class="text-xl font-medium text-on-surface" id="today-github-requests">-</div>
+            </div>
+            <div>
+              <div class="text-xs text-on-surface-variant mb-1">今日流量</div>
+              <div class="text-xl font-medium text-primary" id="today-github-bytes">-</div>
+            </div>
+            <div>
+              <div class="text-xs text-on-surface-variant mb-1">累计请求</div>
+              <div class="text-xl font-medium text-on-surface" id="total-github-requests">-</div>
+            </div>
+            <div>
+              <div class="text-xs text-on-surface-variant mb-1">累计流量</div>
+              <div class="text-xl font-medium text-primary" id="total-github-bytes">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Docker 加速 -->
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <DockerIcon size={20} class="text-on-surface" />
+            <span class="text-sm font-medium text-on-surface">Docker 加速</span>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-xs text-on-surface-variant mb-1">今日请求</div>
+              <div class="text-xl font-medium text-on-surface" id="today-docker-requests">-</div>
+            </div>
+            <div>
+              <div class="text-xs text-on-surface-variant mb-1">今日流量</div>
+              <div class="text-xl font-medium text-primary" id="today-docker-bytes">-</div>
+            </div>
+            <div>
+              <div class="text-xs text-on-surface-variant mb-1">累计请求</div>
+              <div class="text-xl font-medium text-on-surface" id="total-docker-requests">-</div>
+            </div>
+            <div>
+              <div class="text-xs text-on-surface-variant mb-1">累计流量</div>
+              <div class="text-xl font-medium text-primary" id="total-docker-bytes">-</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -294,50 +356,34 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
       const response = await fetch('/api/stats');
       const data = await response.json();
       
-      // GitHub 统计
-      const githubTodayReq = data.today?.github?.requests || 0;
-      const githubTodayByt = data.today?.github?.bytes || 0;
-      const githubTotalReq = data.total?.github?.requests || 0;
-      const githubTotalByt = data.total?.github?.bytes || 0;
+      // 主站访问统计
+      updateElement('today-main-visits', data.formatted?.todayMainVisits || '0');
+      updateElement('today-main-visitors', data.formatted?.todayMainVisitors || '0');
+      updateElement('total-main-visits', data.formatted?.totalMainVisits || '0');
+      updateElement('total-main-visitors', data.formatted?.totalMainVisitors || '0');
       
-      updateElement('github-today-requests', githubTodayReq.toLocaleString());
-      updateElement('github-today-bytes', formatBytes(githubTodayByt));
-      updateElement('github-total-requests', githubTotalReq.toLocaleString());
-      updateElement('github-total-bytes', formatBytes(githubTotalByt));
+      // GitHub 加速统计
+      updateElement('today-github-requests', data.formatted?.todayGithubRequests || '0');
+      updateElement('today-github-bytes', data.formatted?.todayGithubBytes || '0 B');
+      updateElement('total-github-requests', data.formatted?.totalGithubRequests || '0');
+      updateElement('total-github-bytes', data.formatted?.totalGithubBytes || '0 B');
       
-      // Docker 统计
-      const dockerTodayReq = data.today?.docker?.requests || 0;
-      const dockerTodayByt = data.today?.docker?.bytes || 0;
-      const dockerTotalReq = data.total?.docker?.requests || 0;
-      const dockerTotalByt = data.total?.docker?.bytes || 0;
-      
-      updateElement('docker-today-requests', dockerTodayReq.toLocaleString());
-      updateElement('docker-today-bytes', formatBytes(dockerTodayByt));
-      updateElement('docker-total-requests', dockerTotalReq.toLocaleString());
-      updateElement('docker-total-bytes', formatBytes(dockerTotalByt));
-      
-      // 总计统计
-      const totalTodayReq = githubTodayReq + dockerTodayReq;
-      const totalTodayByt = githubTodayByt + dockerTodayByt;
-      const totalReq = githubTotalReq + dockerTotalReq;
-      const totalByt = githubTotalByt + dockerTotalByt;
-      
-      updateElement('total-today-requests', totalTodayReq.toLocaleString());
-      updateElement('total-today-bytes', formatBytes(totalTodayByt));
-      updateElement('total-requests', totalReq.toLocaleString());
-      updateElement('total-bytes', formatBytes(totalByt));
+      // Docker 加速统计
+      updateElement('today-docker-requests', data.formatted?.todayDockerRequests || '0');
+      updateElement('today-docker-bytes', data.formatted?.todayDockerBytes || '0 B');
+      updateElement('total-docker-requests', data.formatted?.totalDockerRequests || '0');
+      updateElement('total-docker-bytes', data.formatted?.totalDockerBytes || '0 B');
       
       // 更新节点卡片中的今日请求
+      const githubTodayReq = data.today?.githubRequests || 0;
+      const dockerTodayReq = data.today?.dockerRequests || 0;
       updateElement('github-today-requests-card', githubTodayReq.toLocaleString());
       updateElement('docker-today-requests-card', dockerTodayReq.toLocaleString());
       
-      // 更新配额使用率
+      // 更新配额使用率（总计）
+      const totalTodayReq = (data.today?.githubRequests || 0) + (data.today?.dockerRequests || 0);
+      const totalTodayByt = (data.today?.githubBytes || 0) + (data.today?.dockerBytes || 0);
       updateQuotaUsage(totalTodayReq, totalTodayByt);
-      
-      // 渲染周统计图表
-      if (data.weekly && data.weekly.length > 0) {
-        renderWeeklyChart(data.weekly);
-      }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }
