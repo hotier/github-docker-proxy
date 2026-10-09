@@ -41,7 +41,23 @@ export async function withLogging(
     updateMetrics(response.status, bytes, duration);
     
     // 更新统计数据（异步，不阻塞响应）
-    updateStats(bytes).catch(err => console.error('Stats update failed:', err));
+    // 只统计代理请求（/api/gh/*, /api/ghraw/*, /v2/* 等）
+    const path = url.pathname;
+    const isProxyRequest = path.startsWith('/api/gh/') || 
+                          path.startsWith('/api/ghraw/') || 
+                          path.startsWith('/api/codeload/') ||
+                          path.startsWith('/api/objects/') ||
+                          path.startsWith('/api/release-assets/') ||
+                          path.startsWith('/api/api.github.com/') ||
+                          path.startsWith('/v2/') ||
+                          path.startsWith('/api/ghcr/') ||
+                          path.startsWith('/api/gcr/') ||
+                          path.startsWith('/api/k8s/') ||
+                          path.startsWith('/api/quay/');
+    
+    if (isProxyRequest) {
+      updateStats(path, bytes).catch(err => console.error('Stats update failed:', err));
+    }
     
     logRequest({
       timestamp: new Date().toISOString(),
