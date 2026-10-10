@@ -12,7 +12,9 @@
     "dev": "node --env-file-if-exists=.env node_modules/astro/bin/astro.mjs dev",
     "icons": "node scripts/build-icons.mjs",
     "check": "astro check",
-    "test": "node --env-file-if-exists=.env --experimental-strip-types --test tests/e2e.test.ts tests/stats.test.ts tests/platform-usage.test.ts tests/shared-cache.test.ts tests/proxy-cache.test.ts tests/proxy-abort.test.ts",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --env-file-if-exists=.env --experimental-strip-types --test tests/stats.test.ts tests/platform-usage.test.ts tests/shared-cache.test.ts tests/proxy-cache.test.ts tests/proxy-abort.test.ts",
+    "test:e2e": "node --env-file-if-exists=.env --experimental-strip-types --test tests/e2e.test.ts",
     "build:css": "tailwindcss -i ./src/styles/global.css -o ./dist/styles.css --minify",
     "build": "astro build && npm run build:css"
   },

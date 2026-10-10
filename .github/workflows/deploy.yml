@@ -38,8 +38,9 @@ jobs:
         run: npm run check
         continue-on-error: true
 
-      - name: End-to-end tests
-        run: npm test
+      # 只跑不碰网络的单元测试：e2e 要起 dev server 并真打上游，CI 里既慢又不稳
+      - name: Unit tests
+        run: npm run test:unit
 
   deploy:
     needs: verify
