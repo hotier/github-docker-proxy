@@ -63,7 +63,9 @@ import Layout from '../layouts/Layout.astro';
           <span class="text-on-surface-variant opacity-70"># 原始命令</span><br>
           <span class="text-primary font-semibold">git</span> clone https://github.com/owner/repo.git<br><br>
           <span class="text-on-surface-variant opacity-70"># 加速命令</span><br>
-          <span class="text-primary font-semibold">git</span> clone <span class="text-tertiary">{Astro.url.origin}/api/gh/owner/repo.git</span>
+          <span class="text-primary font-semibold">git</span> clone <span class="text-tertiary">{Astro.url.origin}/api/gh/owner/repo.git</span><br><br>
+          <span class="text-on-surface-variant opacity-70"># 或一键改写全局：此后所有 https://github.com/ 的 git 操作自动走加速</span><br>
+          <span class="text-primary font-semibold">curl</span> -fsSL <span class="text-tertiary">{Astro.url.origin}/install/git.sh</span> | sh
         </div>
       </div>
     </div>

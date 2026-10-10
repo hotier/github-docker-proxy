@@ -123,6 +123,12 @@ better-icons get simple-icons:docker    # 查看 SVG
 | `https://api.github.com/...` | `{域名}/api/api.github.com/...` |
 | `git clone https://github.com/owner/repo.git` | `git clone {域名}/api/gh/owner/repo.git` |
 
+想让此后所有 `git clone` / `git fetch` 自动走加速（脚本写的是 `git config --global url.…insteadOf`，还原命令随脚本输出）：
+
+```bash
+curl -fsSL https://xxx.deno.dev/install/git.sh | sh
+```
+
 ### Docker
 
 镜像加速器方式（Docker Hub 生效，`/v2/` 为 registry 协议入口）：
@@ -155,6 +161,10 @@ curl https://xxx.deno.dev/api/ghcr/v2/<owner>/<image>/manifests/<tag> \
 Registry 指向 `/api/npm/`（透传 npm 官方源 registry.npmjs.org）：
 
 ```bash
+# 一键脚本（POSIX shell，已安装的 pnpm / yarn 一并设置）
+curl -fsSL https://xxx.deno.dev/install/npm.sh | sh
+
+# 或手动
 npm config set registry https://xxx.deno.dev/api/npm/
 # pnpm / yarn 同理；项目内也可写 .npmrc: registry=https://xxx.deno.dev/api/npm/
 ```
@@ -162,6 +172,10 @@ npm config set registry https://xxx.deno.dev/api/npm/
 ### Go Modules
 
 ```bash
+# 一键脚本
+curl -fsSL https://xxx.deno.dev/install/go.sh | sh
+
+# 或手动
 go env -w GOPROXY=https://xxx.deno.dev/api/goproxy/,direct
 ```
 
@@ -213,6 +227,10 @@ repositories {
 索引指向 `/api/pypi/simple/`（透传官方源 pypi.org）：
 
 ```bash
+# 一键脚本（写入 pip 全局配置，pip 23.1+ 才支持 config 子命令）
+curl -fsSL https://xxx.deno.dev/install/pypi.sh | sh
+
+# 或手动
 pip config set global.index-url https://xxx.deno.dev/api/pypi/simple/
 # 或单次安装 / CI 环境变量
 pip install -i https://xxx.deno.dev/api/pypi/simple/ requests
@@ -257,8 +275,9 @@ simple 索引（HTML 与 JSON）与包 JSON 中内嵌的 `files.pythonhosted.org
 | `/api/stats` | 今日与累计统计（按上游注册表的服务维度拆分，如 github / docker / npm / go / jsd / maven / mcr / 站点；每服务含 requests 原始请求数与 uses 使用次数） |
 | `/api/stats/history?days=30` | 按天存档回看，保留期内可查，超出 `STATS_RETENTION_DAYS` 自动裁剪 |
 | `/api/status` | 全部上游连通性探测，一次返回（状态页用它，逐个服务取要 9 个请求） |
-| `/api/status/{github,docker,npm,go,jsd,unpkg,maven,mcr,pypi}` | 单个上游探测，留给外部监控（结果按实例缓存 30 秒） |
+| `/api/status/{github,docker,npm,go,jsd,unpkg,maven,mcr,pypi}` | 单个上游探测，留给外部监控（结果按实例缓存 `PROBE_TTL_MS`） |
 | `/api/deno-analytics` | Deno Deploy 用量（需 `DEPLOY_ANALYTICS_TOKEN`，按实例缓存 5 分钟） |
+| `/install/{npm,pypi,go,git}.sh` | 一键配置脚本，按请求域名生成 POSIX shell，`curl -fsSL … \| sh` 直接用；Docker 与 Maven 要改系统级配置文件，不提供脚本 |
 
 探测与平台用量端点都接受 `?force=1`：跳过服务端缓存立刻回源，状态页的「刷新」按钮用它。
 
@@ -275,6 +294,7 @@ simple 索引（HTML 与 JSON）与包 JSON 中内嵌的 `files.pythonhosted.org
 │   │   ├── api/{health,stats,deno-analytics,...}.ts
 │   │   ├── api/stats/history.ts # 按天存档回看
 │   │   ├── api/status/*.ts      # 上游连通性探测
+│   │   ├── install/[tool].sh.ts # 一键配置脚本（npm / pypi / go / git）
 │   │   └── v2/[...path].ts      # Docker registry 协议入口
 │   ├── components/
 │   │   ├── BrandMark.astro      # 品牌标识（currentColor 单色，任意尺寸可用）

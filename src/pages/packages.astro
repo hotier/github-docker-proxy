@@ -48,6 +48,8 @@ import Layout from '../layouts/Layout.astro';
             </button>
           </div>
           <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+            <span class="text-on-surface-variant opacity-70"># 一键配置（Linux / macOS，已装的 pnpm / yarn 一并设置）</span><br>
+            <span class="text-primary font-semibold">curl</span> -fsSL <span class="text-tertiary">{Astro.url.origin}/install/npm.sh</span> | sh<br><br>
             <span class="text-on-surface-variant opacity-70"># npm（全局）</span><br>
             <span class="text-primary font-semibold">npm</span> config set registry <span class="text-tertiary">{Astro.url.origin}/api/npm/</span><br><br>
             <span class="text-on-surface-variant opacity-70"># 或项目内 .npmrc</span><br>
@@ -85,6 +87,8 @@ import Layout from '../layouts/Layout.astro';
             </button>
           </div>
           <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+            <span class="text-on-surface-variant opacity-70"># 一键配置（Linux / macOS）</span><br>
+            <span class="text-primary font-semibold">curl</span> -fsSL <span class="text-tertiary">{Astro.url.origin}/install/pypi.sh</span> | sh<br><br>
             <span class="text-on-surface-variant opacity-70"># pip（全局写入配置，对所有项目生效）</span><br>
             <span class="text-primary font-semibold">pip</span> config set global.index-url <span class="text-tertiary">{Astro.url.origin}/api/pypi/simple/</span><br><br>
             <span class="text-on-surface-variant opacity-70"># 或单次安装 / CI 环境变量</span><br>
@@ -121,6 +125,8 @@ import Layout from '../layouts/Layout.astro';
             </button>
           </div>
           <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+            <span class="text-on-surface-variant opacity-70"># 一键配置（Linux / macOS）</span><br>
+            <span class="text-primary font-semibold">curl</span> -fsSL <span class="text-tertiary">{Astro.url.origin}/install/go.sh</span> | sh<br><br>
             <span class="text-on-surface-variant opacity-70"># 推荐：先走本代理，未收录模块直连源站（go env -w 对所有平台通用）</span><br>
             <span class="text-primary font-semibold">go</span> env -w GOPROXY=<span class="text-tertiary">{Astro.url.origin}/api/goproxy/</span>,direct<br><br>
             <span class="text-on-surface-variant opacity-70"># 或临时使用环境变量</span><br>
