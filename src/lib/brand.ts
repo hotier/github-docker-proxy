@@ -1,4 +1,6 @@
 // 品牌信息单一来源：文案与配色 token 都以此为准，改名字只需动这里
+import { CONFIG } from './config.ts';
+
 export const BRAND = {
   /** 全站统一署名，用于标题、导航、页脚、分享卡片 */
   name: '迅源 SwiftOrigin',
@@ -18,3 +20,9 @@ export const THEME_COLOR = {
   light: '#e3f2f8',
   dark: '#060d14',
 } as const;
+
+/** 页脚文案：'本站已运行 N 天 M 小时'，起点是 CONFIG.SITE_LAUNCHED_AT；SSR 每次渲染现算 */
+export function uptimeText(at: number = Date.now()): string {
+  const hours = Math.max(0, Math.floor((at - CONFIG.SITE_LAUNCHED_AT) / 3600_000));
+  return `本站已运行 ${Math.floor(hours / 24)} 天 ${hours % 24} 小时`;
+}

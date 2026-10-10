@@ -12,6 +12,7 @@ import {
   trackPageView,
 } from '../src/lib/stats.ts';
 import { isUsageRequest } from '../src/lib/services.ts';
+import { cnDay, cnDayStart } from '../src/lib/cn-date.ts';
 
 const ORIGIN = 'https://proxy.example';
 const usage = (
@@ -264,13 +265,7 @@ describe('KV 后端统计', () => {
   });
 
   it('按天存档可回看历史日桶，超期日桶被清扫', async () => {
-    const stamp = new Date();
-    stamp.setDate(stamp.getDate() - 1);
-    const yesterday = [
-      stamp.getFullYear(),
-      String(stamp.getMonth() + 1).padStart(2, '0'),
-      String(stamp.getDate()).padStart(2, '0'),
-    ].join('-');
+    const yesterday = cnDay(Date.now() - 24 * 60 * 60 * 1000);
 
     // 昨日真实存档 + 远超保留期的历史日桶 + 一个累计桶
     counters.set(id(['st', 'd', yesterday, 'docker', 'req', '0']), 5n);
@@ -296,5 +291,27 @@ describe('KV 后端统计', () => {
       [...counters.keys()].some((key) => key.startsWith(id(['st', 'c', 'all']))),
       '累计桶不参与按天清理'
     );
+  });
+});
+
+describe('东八区日分割', () => {
+  it('UTC 16:00 即北京时间次日零点，日键随之翻页', () => {
+    assert.equal(cnDay(Date.UTC(2026, 9, 10, 15, 59, 59)), '2026-10-10');
+    assert.equal(cnDay(Date.UTC(2026, 9, 10, 16, 0, 0)), '2026-10-11');
+    assert.equal(cnDayStart(Date.UTC(2026, 9, 10, 16, 30)), Date.UTC(2026, 9, 10, 16, 0, 0));
+    assert.equal(cnDayStart(Date.UTC(2026, 9, 10, 15, 30)), Date.UTC(2026, 9, 9, 16, 0, 0));
+  });
+
+  // 上一段的 beforeEach 会留下假的 globalThis.Deno，这里清掉才能回到内存后端
+  beforeEach(() => {
+    delete (globalThis as any).Deno;
+    setStore(null);
+  });
+
+  it('日桶键与实例时区无关，恒为东八区自然日', async () => {
+    recordRequest({ service: 'github', bytes: 10, status: 200, durationMs: 5 });
+    const stats = await getStats();
+    assert.equal(stats.date, cnDay(Date.now()));
+    assert.equal(stats.today.github.requests, 1, '今日读数要落在东八区今日这个桶里');
   });
 });

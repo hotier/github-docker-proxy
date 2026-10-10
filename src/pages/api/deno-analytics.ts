@@ -3,6 +3,7 @@ import { withLogging } from '../../lib/logging';
 import { jsonResponse } from '../../lib/helpers';
 import { cachedJson } from '../../lib/probe';
 import { accumulateDailyRows, addUsage, dayOf, emptyUsage, type PlatformUsage } from '../../lib/platform-usage';
+import { cnDayStart } from '../../lib/cn-date';
 
 // 平台禁止自定义 DENO_ 前缀变量名，线上用 DEPLOY_ANALYTICS_TOKEN；本地 .env 沿用 DENO_API_TOKEN 保底
 const DENO_API_TOKEN = process.env.DEPLOY_ANALYTICS_TOKEN || process.env.DENO_API_TOKEN;
@@ -15,11 +16,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // 出网窗口只取最近 35 天：保留期没有公开承诺，取到多少算多少，更早的历史靠 KV 日存档累积
 const LOOKBACK_DAYS = 35;
 
-// 获取今日开始时间（本地时区）
+// 今日 = 东八区自然日；实例跑在 UTC，用本地零点会把翻页推迟到北京时间 08:00
 function getTodayStart(): Date {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-  return today;
+  return new Date(cnDayStart(Date.now()));
 }
 
 // 获取 ISO 格式时间（UTC）
@@ -48,8 +47,9 @@ async function fetchAnalytics(since: string, until: string): Promise<any> {
 
 async function collectAnalytics(): Promise<unknown> {
   const until = toISOUTC(new Date());
-  const todaySince = toISOUTC(getTodayStart());
-  const todayStartMs = getTodayStart().getTime();
+  const todayStart = getTodayStart();
+  const todaySince = toISOUTC(todayStart);
+  const todayStartMs = todayStart.getTime();
   const since = toISOUTC(new Date(Date.now() - LOOKBACK_DAYS * DAY_MS));
 
   console.log('Fetching analytics from', since, 'to', until);
@@ -90,7 +90,7 @@ async function collectAnalytics(): Promise<unknown> {
     if (new Date(time).getTime() >= todayStartMs) addUsage(today, usage);
   }
 
-  // 累计读 KV 日存档（含已超出出网窗口的更早日期），今日仍按本地自然日从本次窗口算
+  // 累计读 KV 日存档（含已超出出网窗口的更早日期），今日仍按东八区自然日从本次窗口算
   const rows = [...days].map(([day, usage]) => ({ day, usage }));
   const archived = await accumulateDailyRows(rows);
 
@@ -109,7 +109,8 @@ async function collectAnalytics(): Promise<unknown> {
       since: effectiveSince,
       until: until,
       todaySince: todaySince,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      // 日分割固定东八区，与实例时区无关
+      timezone: 'Asia/Shanghai'
     },
     today: { ...usagePayload(today), dataPoints: values.length },
     total: {

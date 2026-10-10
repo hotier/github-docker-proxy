@@ -46,9 +46,9 @@ const services = [
             <th class="py-3 pr-3 font-medium w-[20%]">服务</th>
             <th class="py-3 px-3 font-medium w-[13%]">状态</th>
             <th class="py-3 px-3 font-medium text-right w-[11%]">延迟</th>
-            <th class="py-3 px-3 font-medium text-right w-[15%]">今日使用</th>
+            <th class="py-3 px-3 font-medium text-right w-[15%]">今日请求</th>
             <th class="py-3 px-3 font-medium text-right w-[13%]">今日流量</th>
-            <th class="py-3 px-3 font-medium text-right w-[15%]">累计使用</th>
+            <th class="py-3 px-3 font-medium text-right w-[15%]">累计请求</th>
             <th class="py-3 pl-3 font-medium text-right w-[13%]">累计流量</th>
           </tr>
         </thead>
@@ -66,9 +66,9 @@ const services = [
                 <span id={`${svc.key}-status-text`} class="ml-2 text-on-surface-variant">检测中...</span>
               </td>
               <td class="py-3.5 px-3 text-right font-mono text-on-surface-variant" id={`${svc.key}-response-time`} data-label="延迟">-</td>
-              <td class="py-3.5 px-3 text-right font-mono text-on-surface" id={`${svc.key}-today-uses`} data-label="今日使用">-</td>
+              <td class="py-3.5 px-3 text-right font-mono text-on-surface" id={`${svc.key}-today-uses`} data-label="今日请求">-</td>
               <td class="py-3.5 px-3 text-right font-mono text-primary" id={`${svc.key}-today-bytes`} data-label="今日流量">-</td>
-              <td class="py-3.5 px-3 text-right font-mono text-on-surface" id={`${svc.key}-total-uses`} data-label="累计使用">-</td>
+              <td class="py-3.5 px-3 text-right font-mono text-on-surface" id={`${svc.key}-total-uses`} data-label="累计请求">-</td>
               <td class="py-3.5 pl-3 text-right font-mono text-primary" id={`${svc.key}-total-bytes`} data-label="累计流量">-</td>
             </tr>
           ))}
@@ -164,9 +164,9 @@ const services = [
   const NODES = ['github', 'docker', 'npm', 'go', 'jsd', 'unpkg', 'maven', 'mcr', 'pypi'];
 
   // 客户端缓存：页面加载只渲染未过期的数据，刷新页面不再触发全量请求
-  // 探测与统计 60 秒；平台统计是 15 分钟粒度指标，5 分钟已足够
-  // 服务端另有 src/lib/probe.ts 的探测/用量缓存，多个访客共享同一次出网
-  const CACHE_TTL = { node: 60000, stats: 60000, deno: 300000 };
+  // 探测与统计 120 秒，同时兼作到期轮询间隔；服务端探测 TTL 比它大，轮询才不会每轮都回源
+  // 平台统计是 15 分钟粒度指标，5 分钟已足够
+  const CACHE_TTL = { node: 120000, stats: 120000, deno: 300000 };
   const CACHE_KEY = 'status-cache:';
 
   // 两张卡片各自一套刷新控件：按钮的忙态与"数据更新于"只影响本卡片
@@ -306,7 +306,7 @@ const services = [
   // 数字增长入场：首次渲染从 0 递增到终值，所有数字共用一个 rAF 循环
   const TWEEN_MS = 850;
   const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // 入场只放一次：60 秒轮询与手动刷新直接写终值，避免读数每次跳动
+  // 入场只放一次：到期轮询与手动刷新直接写终值，避免读数每次跳动
   const entered = { stats: false, deno: false };
   const tweens: { el: HTMLElement; target: number; fmt: (n: number) => string; start: number }[] = [];
   let tweenRunning = false;
@@ -365,7 +365,7 @@ const services = [
     }
 
     if (scope !== 'stats') {
-      // 各加速节点统计(表格内今日/累计使用次数与流量)；使用次数=一次下载/拉取，口径见 services.isUsageRequest
+      // 各加速节点统计(表格内今日/累计请求与流量)；列名写「请求」，值仍是收敛后的使用次数，口径见 services.isUsageRequest
       for (const svc of NODES) {
         const t = today[svc] || {};
         const c = total[svc] || {};
@@ -426,14 +426,11 @@ const services = [
       setMetric('deno-total-cpu', total.cpuTime, fmtDuration, animate);
       setMetric('deno-total-ingress', total.ingressBytes, formatBytes, animate);
       setMetric('deno-total-egress', total.egressBytes, formatBytes, animate);
-      if (typeof total.days === 'number') {
-        updateElement(
-          'deno-total-note',
-          total.degraded
-            ? '日归档后端不可用，当前累计只覆盖本次查询窗口'
-            : `累计为本站按日归档的平台用量，已存 ${total.days} 天（${total.store} 后端）`
-        );
-      }
+      // 正常情况不必在页面上交代归档口径，只有后端不可用才需要如实提示
+      updateElement(
+        'deno-total-note',
+        total.degraded ? '日归档后端不可用，当前累计只覆盖本次查询窗口' : ''
+      );
     } else {
       if (note) {
         note.textContent = data.error === 'DEPLOY_ANALYTICS_TOKEN is not configured'
@@ -525,13 +522,37 @@ const services = [
 
   // 到期自动刷新：只绕过本地缓存（否则同频的 TTL 会让数据永不更新），
   // 仍走服务端缓存，让同一实例上的多个访客共享一次出网探测
-  // 后台标签页不轮询：一个挂着不看的页面就是每分钟一轮同源请求，而免费额度按 CPU 时间计费
+  // 没人看就不必付费：后台标签页不轮询；前台超过 IDLE_MS 没有任何交互，
+  // 说明是忘关的标签页，同样停掉——免费额度按 CPU 时间计费
+  const IDLE_MS = 5 * 60 * 1000;
+  let lastActiveAt = Date.now();
+  let idle = false;
+
+  // 只认明确的交互信号：鼠标停在页面上不该让轮询一直活着
+  function wake(resync: boolean) {
+    lastActiveAt = Date.now();
+    if (idle) {
+      idle = false;
+      refreshAll(true, false);
+    } else if (resync) {
+      refreshAll(false, false);
+    }
+  }
+
+  ['pointerdown', 'keydown', 'wheel'].forEach((event) =>
+    document.addEventListener(event, () => wake(false), { passive: true })
+  );
+
   setInterval(() => {
     if (document.visibilityState === 'hidden') return;
+    if (Date.now() - lastActiveAt > IDLE_MS) {
+      idle = true;
+      return;
+    }
     refreshAll(true, false);
   }, CACHE_TTL.node);
-  // 切回前台时立刻补一轮，不等下一个 tick
+  // 切回前台本身就是在看：立刻补一轮，不等下一个 tick
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'hidden') refreshAll(false, false);
+    if (document.visibilityState !== 'hidden') wake(true);
   });
 </script>

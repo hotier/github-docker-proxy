@@ -1,8 +1,10 @@
 // 平台用量累计：Deno 分析接口只返回请求窗口内的 15 分钟桶，保留期没有公开承诺
 // （新版控制台历史上也只给 24h/7d/30d 档位），所以累计值不依赖长窗口查询。
-// 写模型：按 UTC 日聚合后整日覆盖写入，写同一个日键是幂等的，多实例并发不会重复计数
+// 写模型：按东八区自然日聚合后整日覆盖写入，写同一个日键是幂等的，多实例并发不会重复计数
 // 读模型：累计 = KV 里全部日键求和，日键数 = 应用运行天数，读取成本线性且有 5 分钟服务端缓存
 // 后端：Deno KV(生产)，内存(dev/test)，与 lib/stats.ts 的注入方式一致
+
+import { cnDay } from './cn-date.ts';
 
 export type PlatformUsage = {
   requests: number;
@@ -34,9 +36,9 @@ export function addUsage(target: PlatformUsage, delta: PlatformUsage): PlatformU
   return target;
 }
 
-// 桶时间(UTC ISO) -> 所属 UTC 日
+// 桶时间(UTC ISO) -> 所属东八区自然日
 export function dayOf(bucketTime: string): string {
-  return bucketTime.slice(0, 10);
+  return cnDay(new Date(bucketTime).getTime());
 }
 
 class MemoryStore implements PlatformUsageStore {

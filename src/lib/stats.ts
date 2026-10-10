@@ -1,11 +1,12 @@
 // 统计：请求数 / 流量字节 / 错误 / 延迟，按服务维度拆分（服务清单来自 lib/services）
 // 写模型：进程内缓冲增量 -> 批量落库（KV 用服务端 sum 原子自增，不做读-改-写）
 // 读模型：今日读日桶，累计读 all-time 桶
-// 存档：日桶即按天存档（只到自然日，不细到小时），超过保留期的日桶由清扫删除
+// 存档：日桶即按天存档（东八区自然日，见 lib/cn-date，不细到小时），超过保留期的日桶由清扫删除
 // 后端：Deno KV(生产)，内存(dev/test)
 
 // 显式带扩展名：本文件被 node --experimental-strip-types 的测试直接加载
 import { SERVICE_NAMES, type Service } from './services.ts';
+import { cnDay } from './cn-date.ts';
 
 export type { Service };
 // 站点页面访问与加速服务共用一套计数器字段，'site' 只出现在统计侧
@@ -262,18 +263,15 @@ let flushTail: Promise<void> = Promise.resolve();
 let hooksInstalled = false;
 
 function dayPeriod(at: number = Date.now()): string {
-  const d = new Date(at);
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
+  return cnDay(at);
 }
 
-// 含今日在内的最近 N 个自然日，旧 -> 新（用年月日推算，避开夏令时导致的整天偏移）
+// 含今日在内的最近 N 个自然日，旧 -> 新（日固定 +08:00 无夏令时，直接按 24h 步进）
 function recentDayPeriods(days: number): string[] {
-  const now = new Date();
+  const now = Date.now();
   const out: string[] = [];
   for (let i = days - 1; i >= 0; i--) {
-    out.push(dayPeriod(new Date(now.getFullYear(), now.getMonth(), now.getDate() - i).getTime()));
+    out.push(dayPeriod(now - i * DAY_MS));
   }
   return out;
 }

@@ -20,6 +20,7 @@ export function checkRateLimit(req: Request): Response | null {
   if (!record || now > record.resetTime) {
     // 新窗口
     rateLimitMap.set(clientIp, { count: 1, resetTime: now + windowMs });
+    installSweeper();
     return null;
   }
   
@@ -43,15 +44,21 @@ export function checkRateLimit(req: Request): Response | null {
   return null;
 }
 
-// 定期清理过期的记录
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of rateLimitMap.entries()) {
-    if (now > value.resetTime) {
-      rateLimitMap.delete(key);
+// 过期记录清扫：首次真正记账才装定时器，且 unref 不拖着事件循环不放
+// （与 lib/stats.ts 的 flush 定时器同口径；未启用限流时这里一次都不会装）
+let sweeperInstalled = false;
+function installSweeper(): void {
+  if (sweeperInstalled) return;
+  sweeperInstalled = true;
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of rateLimitMap.entries()) {
+      if (now > value.resetTime) {
+        rateLimitMap.delete(key);
+      }
     }
-  }
-}, 60 * 1000); // 每分钟清理一次
+  }, 60 * 1000).unref?.(); // 每分钟清理一次
+}
 
 // 获取速率限制状态（用于监控）
 export function getRateLimitStatus(clientIp: string): { limit: number; remaining: number; resetTime: number } {

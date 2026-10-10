@@ -18,7 +18,7 @@
 - 流式转发，不缓冲大文件
 - Docker Hub Token 自动换取（支持配置私有账号提升限速）
 - 访问鉴权（可选，只保护代理路径，说明页面对外开放）：`Authorization: Basic proxy:<密码>` 或 `x-proxy-key: <密码>`
-- 访问与流量统计（按 github / docker / npm / go / jsd / unpkg / maven / mcr / pypi / 站点服务维度；生产使用 Deno KV，开发使用内存）。每服务两个计数：HTTP 请求数与「使用次数」——后者按一次下载/拉取算一次（GitHub Release/raw/archive/clone、镜像 manifest、npm tarball、Go module zip、PyPI 文件、CDN 资源、Maven jar，规则见 `src/lib/services.ts` 的 `isUsageRequest`），状态页表格展示的是使用次数
+- 访问与流量统计（按 github / docker / npm / go / jsd / unpkg / maven / mcr / pypi / 站点服务维度；生产使用 Deno KV，开发使用内存）。每服务两个计数：HTTP 请求数与「使用次数」——后者按一次下载/拉取算一次（GitHub Release/raw/archive/clone、镜像 manifest、npm tarball、Go module zip、PyPI 文件、CDN 资源、Maven jar，规则见 `src/lib/services.ts` 的 `isUsageRequest`），状态页表格展示的是使用次数（列名写作「今日请求 / 累计请求」）
 - 毛玻璃（glassmorphism）界面，亮/暗/跟随系统主题，无闪烁
 - 构建期图标引擎（better-icons + Iconify），零客户端 JS、零外部字体依赖
 

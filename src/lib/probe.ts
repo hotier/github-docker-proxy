@@ -21,8 +21,9 @@ export type ProbeTarget = {
 
 type CacheEntry = { at: number; data: unknown };
 
-// 看板每 60 秒回源一次，30 秒 TTL 既能合并同一时刻的并发刷新，又不至于让状态明显滞后
-export const PROBE_TTL_MS = 30_000;
+// TTL 要大于看板的到期轮询(120s)，否则每一轮都打穿缓存：150s 下同一实例每 4 分钟才真发一轮上游探测
+// 探测看的是连通性，滞后几分钟不影响判断；手动刷新按钮带 force 直接绕过缓存取实时值
+export const PROBE_TTL_MS = 150_000;
 
 const cache = new Map<string, CacheEntry>();
 const pending = new Map<string, Promise<unknown>>();

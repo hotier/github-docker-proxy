@@ -36,6 +36,11 @@ export const CONFIG = {
   // 速率限制（每分钟请求数，0 表示不限制）
   RATE_LIMIT: parseInt(getEnv("RATE_LIMIT") || "0"),
   
+  // 站点上线时刻：首次 CI/CD 部署成功（run 37968977427）于 2026-10-09T17:49:27Z，
+  // 早于它的几次都失败了。用 Date.UTC 显式给绝对时刻，避免受实例本地时区影响
+  //（生产实例跑 UTC，本机是 +08:00）
+  SITE_LAUNCHED_AT: Date.UTC(2026, 9, 9, 17, 49, 27),
+
   // 版本号
   VERSION: "1.0.0",
 };
