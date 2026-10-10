@@ -25,7 +25,7 @@ import Layout from '../layouts/Layout.astro';
       <div id="packages-toc-chips" class="lg:hidden flex gap-2 overflow-x-auto pb-4 -mb-1" aria-label="目录"></div>
 
       <!-- npm -->
-      <div id="pkg-npm" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-npm" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--npm] text-primary text-2xl"></span>
           npm 加速
@@ -60,7 +60,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- PyPI -->
-      <div id="pkg-pypi" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-pypi" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--pypi] text-primary text-2xl"></span>
           PyPI 加速
@@ -99,7 +99,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- Go Modules -->
-      <div id="pkg-go" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-go" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--go] text-primary text-2xl"></span>
           Go 模块加速
@@ -132,7 +132,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- jsDelivr -->
-      <div id="pkg-jsd" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-jsd" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--jsdelivr] text-primary text-2xl"></span>
           jsDelivr 加速
@@ -163,7 +163,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- unpkg -->
-      <div id="pkg-unpkg" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-unpkg" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--unpkg] text-primary text-2xl"></span>
           unpkg 加速
@@ -196,7 +196,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- Maven -->
-      <div id="pkg-maven" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-maven" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--apachemaven] text-primary text-2xl"></span>
           Maven 加速
@@ -238,7 +238,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- 支持的端点 -->
-      <div id="pkg-endpoints" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6">
+      <div id="pkg-endpoints" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6">
         <h2 class="text-xl font-medium text-on-surface mb-4">支持的端点</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
@@ -308,8 +308,10 @@ import Layout from '../layouts/Layout.astro';
     tocChips?.appendChild(tocLink(item, TOC_CHIP));
   });
 
-  // 滚动时高亮当前卡片，偏移量与卡片上的 scroll-mt-24 一致，避开吸顶导航栏
-  const HEAD_OFFSET = 96;
+  // 滚动时高亮当前卡片，偏移量与卡片上的 scroll-mt-20 一致，避开吸顶导航栏
+  // 65px 头部 + 卡片 24px 底间距：停在 80px 时上一张卡片整条底边正好藏进头部之后，
+  // 若沿用 scroll-mt-24（96px）会在头部下缘露出 7px 上一卡片的圆角残余
+  const HEAD_OFFSET = 80;
   // 锚点跳转后的实际位置有亚像素误差，留 1px 容差否则正好停在偏移线上的卡片不算到达
   const SNAP_TOLERANCE = 1;
   // 点击目录是平滑滚动，要跑几百毫秒，期间高亮钉在目标上，否则会一路闪过中间分区再落回
