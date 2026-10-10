@@ -79,6 +79,9 @@ export function copyHeaders(from: Headers, to: Headers, skip: string[] = []) {
 
 // 统计真实写出字节：代理响应是透传流，且 copyHeaders 会剥掉 content-length，
 // 因此不能从响应头取流量，必须在流上逐块累加。
+// 兜底超时：只防「流被孤儿化后计数悬挂」，要长过最慢的正常大文件传输
+const LONG_TRANSFER_MS = 30 * 60 * 1000;
+
 export function countOutboundBytes(response: Response): {
   response: Response;
   settled: Promise<number>;
@@ -91,8 +94,12 @@ export function countOutboundBytes(response: Response): {
     settle = resolve;
   });
 
-  // 客户端中断时只触发 cancel 不触发 flush；再加超时兜底，计数不悬挂
-  const timer = setTimeout(() => settle(total), 60_000);
+  // 客户端中断时只触发 cancel 不触发 flush，所以两个都要接。
+  // 兜底超时只在流被孤儿化时生效，不能比正常传输短：本站在传大文件，60 秒的兜底会把
+  // 超过 60 秒的下载截断成前 60 秒的字节（promise 已 resolve，结束时补不回来），
+  // 记到的流量因此永远低于平台出口量。unref 与 lib/stats.ts 同口径，不拖着事件循环。
+  const timer = setTimeout(() => settle(total), LONG_TRANSFER_MS);
+  timer.unref?.();
   const done = () => {
     clearTimeout(timer);
     settle(total);

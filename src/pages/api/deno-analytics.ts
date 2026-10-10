@@ -13,8 +13,11 @@ const API_BASE = 'https://api.deno.com/v2';
 // Deno Analytics 本身是 15 分钟粒度，服务端缓存 5 分钟足够，且免去每个访客一次外部 API 调用
 const ANALYTICS_TTL_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-// 出网窗口只取最近 35 天：保留期没有公开承诺，取到多少算多少，更早的历史靠 KV 日存档累积
-const LOOKBACK_DAYS = 35;
+// 出网窗口只取最近 8 天：窗口内今天的桶用来算「今日」，最近几天用来幂等回填日桶，
+// 更早的历史已经在 KV 归档里，不必每次刷新都重算。
+// 实测有效窗口上限约 31 天（请求 35 天只回 2975 个桶 = 31 天差一个桶），文档没写这条限制，
+// 所以更不能把「查得到多少」当「只查多少」——宽窗只是白烧 CPU：2975 行 × 每 5 分钟一次。
+const LOOKBACK_DAYS = 8;
 
 // 今日 = 东八区自然日；实例跑在 UTC，用本地零点会把翻页推迟到北京时间 08:00
 function getTodayStart(): Date {
@@ -90,9 +93,10 @@ async function collectAnalytics(): Promise<unknown> {
     if (new Date(time).getTime() >= todayStartMs) addUsage(today, usage);
   }
 
-  // 累计读 KV 日存档（含已超出出网窗口的更早日期），今日仍按东八区自然日从本次窗口算
+  // 累计读 KV 归档（当月日桶 + 已封存的月桶，含已超出出网窗口的更早日期），
+  // 今日仍按东八区自然日从本次窗口算
   const rows = [...days].map(([day, usage]) => ({ day, usage }));
-  const archived = await accumulateDailyRows(rows);
+  const archived = await accumulateDailyRows(rows, { windowDays: LOOKBACK_DAYS });
 
   const latestValue = values[values.length - 1] || [];
   const latestData = {
@@ -115,7 +119,7 @@ async function collectAnalytics(): Promise<unknown> {
     today: { ...usagePayload(today), dataPoints: values.length },
     total: {
       ...usagePayload(archived.total),
-      // 日存档天数，用于判断累计值覆盖了多长的运行历史
+      // 归档覆盖的自然日数，用于判断累计值覆盖了多长的运行历史
       days: archived.days,
       store: archived.store,
       degraded: archived.degraded
