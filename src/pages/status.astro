@@ -24,7 +24,7 @@ const services = [
   <!-- 页面标题：服务节点列表的刷新按钮放在页头右侧，不进表格 -->
   <div class="flex items-start justify-between gap-3 mb-6">
     <div>
-      <h1 class="text-3xl font-medium text-on-surface mb-2">服务状态</h1>
+      <h1 class="text-2xl sm:text-3xl font-medium text-on-surface mb-2">服务状态</h1>
       <p class="text-on-surface-variant">实时监控各节点状态和请求配额使用情况</p>
     </div>
     <div class="flex shrink-0 items-center gap-2 pt-2">
@@ -36,10 +36,11 @@ const services = [
   </div>
 
   <!-- 服务节点列表：每服务一行，状态与请求/流量统计均为文本 -->
-  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6" id="status-cards">
+  <div class="bg-surface-container-highest rounded-3xl p-4 sm:p-6 mb-6" id="status-cards">
     <div class="overflow-x-auto">
       <!-- table-fixed + 百分比列宽：列宽与单元格内容解耦，数字自增动画只换字形不会推挤列宽 -->
-      <table class="w-full table-fixed text-sm min-w-[780px]">
+      <!-- 窄屏(<md)由 scoped CSS 展开成两列卡片：7 列 + min-w-[780px] 在手机上逃不掉横向滚动 -->
+      <table class="status-table w-full table-fixed text-sm min-w-[780px]">
         <thead>
           <tr class="text-left text-on-surface-variant border-b border-surface-variant">
             <th class="py-3 pr-3 font-medium w-[20%]">服务</th>
@@ -60,15 +61,15 @@ const services = [
                   <div class="font-medium text-on-surface">{svc.name}</div>
                 </div>
               </td>
-              <td class="py-3.5 px-3 whitespace-nowrap">
+              <td class="py-3.5 px-3 whitespace-nowrap" data-label="状态">
                 <span id={`${svc.key}-status-dot`} class="inline-block w-3 h-3 rounded-full bg-gray-400 animate-pulse"></span>
                 <span id={`${svc.key}-status-text`} class="ml-2 text-on-surface-variant">检测中...</span>
               </td>
-              <td class="py-3.5 px-3 text-right font-mono text-on-surface-variant" id={`${svc.key}-response-time`}>-</td>
-              <td class="py-3.5 px-3 text-right font-mono text-on-surface" id={`${svc.key}-today-uses`}>-</td>
-              <td class="py-3.5 px-3 text-right font-mono text-primary" id={`${svc.key}-today-bytes`}>-</td>
-              <td class="py-3.5 px-3 text-right font-mono text-on-surface" id={`${svc.key}-total-uses`}>-</td>
-              <td class="py-3.5 pl-3 text-right font-mono text-primary" id={`${svc.key}-total-bytes`}>-</td>
+              <td class="py-3.5 px-3 text-right font-mono text-on-surface-variant" id={`${svc.key}-response-time`} data-label="延迟">-</td>
+              <td class="py-3.5 px-3 text-right font-mono text-on-surface" id={`${svc.key}-today-uses`} data-label="今日使用">-</td>
+              <td class="py-3.5 px-3 text-right font-mono text-primary" id={`${svc.key}-today-bytes`} data-label="今日流量">-</td>
+              <td class="py-3.5 px-3 text-right font-mono text-on-surface" id={`${svc.key}-total-uses`} data-label="累计使用">-</td>
+              <td class="py-3.5 pl-3 text-right font-mono text-primary" id={`${svc.key}-total-bytes`} data-label="累计流量">-</td>
             </tr>
           ))}
         </tbody>
@@ -77,7 +78,7 @@ const services = [
   </div>
 
   <!-- 访问统计：刷新只作用于本卡片（主站访问 + 平台用量） -->
-  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
+  <div class="bg-surface-container-highest rounded-3xl p-4 sm:p-6 mb-6">
     <div class="flex items-center justify-between gap-3 mb-4">
       <h2 class="text-xl font-medium text-on-surface flex items-center gap-3">
         <span class="icon-[material-symbols--analytics] text-primary"></span>
@@ -118,6 +119,7 @@ const services = [
     <div>
       <h3 class="text-sm font-medium text-on-surface-variant mb-3">平台用量</h3>
       <div id="deno-analytics-note" class="hidden -mt-2 mb-3 text-xs text-on-surface-variant"></div>
+      <!-- 今日来自平台分析接口的本次窗口；累计来自本站按 UTC 日归档到 KV 的平台用量 -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-surface rounded-2xl p-4">
           <div class="text-xs text-on-surface-variant mb-1">今日请求数</div>
@@ -135,73 +137,30 @@ const services = [
           <div class="text-xs text-on-surface-variant mb-1">今日出站流量</div>
           <div class="text-xl font-medium text-primary" id="deno-egress">-</div>
         </div>
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="text-xs text-on-surface-variant mb-1">累计请求数</div>
+          <div class="text-xl font-medium text-on-surface" id="deno-total-requests">-</div>
+        </div>
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="text-xs text-on-surface-variant mb-1">累计 CPU 时间</div>
+          <div class="text-xl font-medium text-primary" id="deno-total-cpu">-</div>
+        </div>
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="text-xs text-on-surface-variant mb-1">累计入站流量</div>
+          <div class="text-xl font-medium text-on-surface" id="deno-total-ingress">-</div>
+        </div>
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="text-xs text-on-surface-variant mb-1">累计出站流量</div>
+          <div class="text-xl font-medium text-primary" id="deno-total-egress">-</div>
+        </div>
       </div>
-    </div>
-  </div>
-
-  <!-- 高级配置 -->
-  <div class="bg-surface-container-highest rounded-3xl p-6">
-    <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
-      <span class="icon-[material-symbols--settings] text-primary"></span>
-      高级配置
-    </h2>
-
-    <div class="bg-error-container text-on-error-container rounded-2xl px-5 py-4 mb-5 flex gap-3 text-sm">
-      <span class="icon-[material-symbols--warning] text-xl shrink-0"></span>
-      <span>
-        <strong>鉴权保护</strong>：如需防止滥用，可在 Deno Deploy Dashboard 中设置 
-        <code class="font-mono bg-black/10 px-2 py-0.5 rounded">PROXY_PASSWORD</code> 
-        环境变量启用鉴权。凭据可走 
-        <code class="font-mono bg-black/10 px-2 py-0.5 rounded">x-proxy-key</code> 
-        请求头，这样 
-        <code class="font-mono bg-black/10 px-2 py-0.5 rounded">Authorization</code> 
-        仍留给客户端自己的 git PAT / 镜像仓库 token。
-      </span>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="bg-surface rounded-2xl p-4">
-        <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
-          <span class="icon-[material-symbols--key] text-primary text-lg"></span>
-          访问密码
-        </h3>
-        <code class="text-sm text-on-surface-variant font-mono">PROXY_PASSWORD</code>
-      </div>
-      <div class="bg-surface rounded-2xl p-4">
-        <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
-          <span class="icon-[material-symbols--list] text-primary text-lg"></span>
-          白名单
-        </h3>
-        <code class="text-sm text-on-surface-variant font-mono">WHITE_LIST=["owner/*"]</code>
-      </div>
-      <div class="bg-surface rounded-2xl p-4">
-        <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
-          <span class="icon-[material-symbols--block] text-primary text-lg"></span>
-          黑名单
-        </h3>
-        <code class="text-sm text-on-surface-variant font-mono">BLACK_LIST=["spam/repo"]</code>
-      </div>
-      <div class="bg-surface rounded-2xl p-4">
-        <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
-          <span class="icon-[material-symbols--speed] text-primary text-lg"></span>
-          速率限制
-        </h3>
-        <code class="text-sm text-on-surface-variant font-mono">RATE_LIMIT=100</code>
-      </div>
-      <div class="bg-surface rounded-2xl p-4">
-        <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
-          <span class="icon-[material-symbols--monitoring] text-primary text-lg"></span>
-          GitHub API 配额
-        </h3>
-        <code class="text-sm text-on-surface-variant font-mono">GITHUB_TOKEN</code>
-      </div>
+      <div id="deno-total-note" class="mt-3 text-xs text-on-surface-variant"></div>
     </div>
   </div>
 </Layout>
 
 <script>
-  // 节点状态端点，github/docker 为静态路由，其余走 /api/status/[service]
-  // 需与上方 services 列表保持一致（新增服务后两处都要加）
+  // 状态页要展示的服务节点，与批量探测端点 /api/status 返回的键一致
   const NODES = ['github', 'docker', 'npm', 'go', 'jsd', 'unpkg', 'maven', 'mcr', 'pypi'];
 
   // 客户端缓存：页面加载只渲染未过期的数据，刷新页面不再触发全量请求
@@ -243,30 +202,43 @@ const services = [
     cardsOf(scope).forEach((card) => updateElement(card.at, text));
   }
 
+  // 服务节点状态：一次 /api/status 拿齐所有上游探测结果（逐个服务取要 9 个请求）
   // 检查节点状态：在线 / 异常(上游返回错误码) / 离线(探测失败或上游无响应)
-  // force 跳过本地缓存；fresh 额外跳过服务端 30 秒缓存（只有手动刷新按钮值得付这个出网代价）
-  async function checkNodeStatus(type, force, fresh) {
+  // force 跳过本地缓存；fresh 额外跳过服务端缓存（只有手动刷新按钮值得付这个出网代价）
+  async function refreshNodes(force: boolean, fresh: boolean) {
     if (!force) {
-      const cached = readCache('node:' + type, CACHE_TTL.node);
+      const cached = readCache('nodes', CACHE_TTL.node);
       if (cached) {
-        updateStatusUI(type, cached.data.state, cached.data.duration);
+        applyNodes(cached.data);
         return;
       }
     }
     beginBusy('services');
     try {
-      const response = await fetch('/api/status/' + type + (fresh ? '?force=1' : ''));
+      const response = await fetch('/api/status' + (fresh ? '?force=1' : ''));
       const data = await response.json();
-      const state = data.status === 'ok' ? 'online' : data.statusCode ? 'error' : 'offline';
-      const duration = state === 'offline' ? null : (data.responseTime || 0);
       // 上游异常/离线同样缓存（就是这一次的探测结果）；探测端点自身取不到结果不缓存
-      writeCache('node:' + type, { state, duration });
-      updateStatusUI(type, state, duration);
+      writeCache('nodes', data);
+      applyNodes(data);
     } catch (error) {
-      updateStatusUI(type, 'offline', null);
+      console.error('Failed to fetch node status:', error);
+      NODES.forEach((type) => updateStatusUI(type, 'offline', null));
     } finally {
       endBusy('services');
     }
+  }
+
+  function applyNodes(data: any) {
+    const services = data?.services || {};
+    NODES.forEach((type) => {
+      const result = services[type];
+      if (!result) {
+        updateStatusUI(type, 'offline', null);
+        return;
+      }
+      const state = result.status === 'ok' ? 'online' : result.statusCode ? 'error' : 'offline';
+      updateStatusUI(type, state, state === 'offline' ? null : result.responseTime || 0);
+    });
   }
 
   // 更新状态 UI（延迟为独立列，类名字符串需保留表格单元格的布局位）
@@ -322,6 +294,14 @@ const services = [
   }
 
   const fmtInt = (n: number) => formatNumber(Math.round(n));
+  // CPU 时间：不足一分钟保留秒的小数，累计值会长成难读的大秒数，改用 h/m/s 展开
+  function fmtDuration(n: number) {
+    const s = n || 0;
+    if (s < 60) return Math.round(s * 100) / 100 + 's';
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return h ? h + 'h ' + m + 'm' : m + 'm ' + Math.round(s % 60) + 's';
+  }
 
   // 数字增长入场：首次渲染从 0 递增到终值，所有数字共用一个 rAF 循环
   const TWEEN_MS = 850;
@@ -427,9 +407,10 @@ const services = [
 
     if (data.success) {
       const animate = enterOnce('deno');
+      const total = data.total || {};
       note?.classList.add('hidden');
       setMetric('deno-requests', data.today.requests, fmtInt, animate);
-      setMetric('deno-cpu', data.today.cpuTime, (n: number) => Math.round(n * 100) / 100 + 's', animate);
+      setMetric('deno-cpu', data.today.cpuTime, fmtDuration, animate);
       if (typeof data.today.ingressBytes === 'number') {
         setMetric('deno-ingress', data.today.ingressBytes, formatBytes, animate);
       } else {
@@ -439,6 +420,19 @@ const services = [
         setMetric('deno-egress', data.today.egressBytes, formatBytes, animate);
       } else {
         updateElement('deno-egress', data.today.egressFormatted);
+      }
+      // 累计读本站 KV 的按日存档：平台只保证返回窗口内的桶，更早的历史由本站留存
+      setMetric('deno-total-requests', total.requests, fmtInt, animate);
+      setMetric('deno-total-cpu', total.cpuTime, fmtDuration, animate);
+      setMetric('deno-total-ingress', total.ingressBytes, formatBytes, animate);
+      setMetric('deno-total-egress', total.egressBytes, formatBytes, animate);
+      if (typeof total.days === 'number') {
+        updateElement(
+          'deno-total-note',
+          total.degraded
+            ? '日归档后端不可用，当前累计只覆盖本次查询窗口'
+            : `累计为本站按日归档的平台用量，已存 ${total.days} 天（${total.store} 后端）`
+        );
       }
     } else {
       if (note) {
@@ -506,7 +500,7 @@ const services = [
 
   // 服务节点列表卡片：上游探测 + 表内各服务的请求/流量
   function refreshServices(force: boolean, fresh: boolean) {
-    NODES.forEach((svc) => checkNodeStatus(svc, force, fresh));
+    refreshNodes(force, fresh);
     fetchStats('services', force);
   }
 
@@ -518,7 +512,7 @@ const services = [
 
   // 加载与轮询共用：/api/stats 一份数据同时含两张卡片，只取一次
   function refreshAll(force: boolean, fresh: boolean) {
-    NODES.forEach((svc) => checkNodeStatus(svc, force, fresh));
+    refreshNodes(force, fresh);
     fetchStats('all', force);
     fetchDenoAnalytics(force, fresh);
   }
@@ -531,5 +525,13 @@ const services = [
 
   // 到期自动刷新：只绕过本地缓存（否则同频的 TTL 会让数据永不更新），
   // 仍走服务端缓存，让同一实例上的多个访客共享一次出网探测
-  setInterval(() => refreshAll(true, false), CACHE_TTL.node);
+  // 后台标签页不轮询：一个挂着不看的页面就是每分钟一轮同源请求，而免费额度按 CPU 时间计费
+  setInterval(() => {
+    if (document.visibilityState === 'hidden') return;
+    refreshAll(true, false);
+  }, CACHE_TTL.node);
+  // 切回前台时立刻补一轮，不等下一个 tick
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'hidden') refreshAll(false, false);
+  });
 </script>

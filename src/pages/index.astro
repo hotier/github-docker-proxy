@@ -12,13 +12,13 @@ import UrlConverter from '../components/UrlConverter.astro';
 >
   <!-- 页面标题 -->
   <div class="mb-6">
-    <h1 class="text-3xl font-medium text-on-surface mb-2">加速访问</h1>
+    <h1 class="text-2xl sm:text-3xl font-medium text-on-surface mb-2">加速访问</h1>
     <p class="text-on-surface-variant">粘贴 GitHub / Docker / npm / Go / jsDelivr / unpkg / Maven / PyPI 链接，自动生成加速链接</p>
   </div>
 
   <!-- URL 转换器 -->
   <!-- 毛玻璃的 backdrop-filter 会生成独立层叠上下文,z-10 让下拉菜单不被下方卡片盖住(仍低于 header 的 z-50) -->
-  <div class="relative z-10 bg-surface-container-highest rounded-3xl p-6 mb-6">
+  <div class="relative z-10 bg-surface-container-highest rounded-3xl p-4 sm:p-6 mb-6">
     <!-- 标识水印单独裁切:卡片本身不能加 overflow-hidden,否则会剪掉转换器的下拉菜单 -->
     <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
       <BrandMark size={260} label="" class="absolute -right-12 -top-14 text-primary opacity-[0.07]" />

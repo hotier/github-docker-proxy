@@ -437,7 +437,7 @@ describe('Packages 加速', () => {
     assert.equal((await resp.json()).name, 'mime');
   });
 
-  for (const svc of ['npm', 'go', 'jsd', 'unpkg', 'maven', 'mcr', 'pypi']) {
+  for (const svc of ['github', 'docker', 'npm', 'go', 'jsd', 'unpkg', 'maven', 'mcr', 'pypi']) {
     it(`/api/status/${svc} 返回结构化结果`, async () => {
       const resp = await fetch(`${BASE_URL}/api/status/${svc}`);
       assert.equal(resp.status, 200);
@@ -446,6 +446,25 @@ describe('Packages 加速', () => {
       assert.equal(typeof data.responseTime, 'number');
     });
   }
+
+  it('/api/status 一次返回全部服务的探测结果', async () => {
+    const data = await (await fetch(`${BASE_URL}/api/status`)).json();
+    assert.deepEqual(
+      Object.keys(data.services).sort(),
+      ['docker', 'github', 'go', 'jsd', 'maven', 'mcr', 'npm', 'pypi', 'unpkg']
+    );
+    for (const [service, result] of Object.entries<any>(data.services)) {
+      assert.ok(['ok', 'error'].includes(result.status), `${service}: ${result.status}`);
+      assert.equal(typeof result.responseTime, 'number');
+    }
+  });
+
+  it('批量端点与单服务端点共用同一份探测缓存', async () => {
+    // 同 key(status:npm) 若各打一次上游，timestamp 会不同
+    const single = await (await fetch(`${BASE_URL}/api/status/npm`)).json();
+    const batched = await (await fetch(`${BASE_URL}/api/status`)).json();
+    assert.equal(batched.services.npm.timestamp, single.timestamp, 'probe cache not shared');
+  });
 
   it('探测结果在服务端缓存，重复请求不重复出网', async () => {
     // timestamp 记录的是真正回源的时刻，TTL 内多次请求应拿到同一时刻

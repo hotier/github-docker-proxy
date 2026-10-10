@@ -1,6 +1,6 @@
 // 工具函数
 
-import { CONFIG } from "./config";
+import { CONFIG } from "./config.ts";
 
 export function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data, null, 2), {

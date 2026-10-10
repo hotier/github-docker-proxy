@@ -10,23 +10,24 @@ import Layout from '../layouts/Layout.astro';
 >
   <!-- 页面标题 -->
   <div class="mb-6">
-    <h1 class="text-3xl font-medium text-on-surface mb-2">GitHub 加速</h1>
+    <h1 class="text-2xl sm:text-3xl font-medium text-on-surface mb-2">GitHub 加速</h1>
     <p class="text-on-surface-variant">支持 Release、Git Clone、Raw 文件、源码归档的加速下载</p>
   </div>
 
   <!-- 使用场景标签页 -->
-  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
-    <div class="flex gap-1 bg-surface-container-high rounded-2xl p-1 w-fit mb-6">
-      <button class="tab-btn active px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="release">
+  <div class="bg-surface-container-highest rounded-3xl p-4 sm:p-6 mb-6">
+    <!-- 四个标签在手机上放不下(约 426px),允许换行后 w-fit 收到容器宽度即可,不再顶破卡片 -->
+    <div class="flex flex-wrap gap-1 bg-surface-container-high rounded-2xl p-1 w-fit mb-6">
+      <button class="tab-btn active px-4 sm:px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="release">
         Release 下载
       </button>
-      <button class="tab-btn px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="clone">
+      <button class="tab-btn px-4 sm:px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="clone">
         Git Clone
       </button>
-      <button class="tab-btn px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="raw">
+      <button class="tab-btn px-4 sm:px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="raw">
         Raw 文件
       </button>
-      <button class="tab-btn px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="archive">
+      <button class="tab-btn px-4 sm:px-5 py-2 rounded-xl text-sm font-medium transition-colors" data-tab="archive">
         源码归档
       </button>
     </div>
@@ -105,31 +106,31 @@ import Layout from '../layouts/Layout.astro';
   </div>
 
   <!-- 支持的端点 -->
-  <div class="bg-surface-container-highest rounded-3xl p-6">
+  <div class="bg-surface-container-highest rounded-3xl p-4 sm:p-6">
     <h2 class="text-xl font-medium text-on-surface mb-4">支持的端点</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/gh/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] self-start sm:self-auto text-center">/api/gh/</code>
         <span class="text-on-surface-variant text-sm">github.com 全站代理</span>
       </div>
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/ghraw/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] self-start sm:self-auto text-center">/api/ghraw/</code>
         <span class="text-on-surface-variant text-sm">raw.githubusercontent.com</span>
       </div>
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/codeload/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] self-start sm:self-auto text-center">/api/codeload/</code>
         <span class="text-on-surface-variant text-sm">codeload.github.com</span>
       </div>
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/objects/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] self-start sm:self-auto text-center">/api/objects/</code>
         <span class="text-on-surface-variant text-sm">objects.githubusercontent.com</span>
       </div>
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/release-assets/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] self-start sm:self-auto text-center">/api/release-assets/</code>
         <span class="text-on-surface-variant text-sm">release-assets.githubusercontent.com</span>
       </div>
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] text-center">/api/api.github.com/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[100px] self-start sm:self-auto text-center">/api/api.github.com/</code>
         <span class="text-on-surface-variant text-sm">api.github.com API 代理</span>
       </div>
     </div>

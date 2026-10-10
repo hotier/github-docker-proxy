@@ -1,6 +1,8 @@
 // 上游探测与其结果缓存。缓存是单实例进程内状态（与限流同口径），
 // 作用是让同一实例上的多个访客共享一次出网探测，而不是每人刷新都打上游
 
+import type { Service } from './services.ts';
+
 export type ProbeResult = {
   status: 'ok' | 'error';
   responseTime: number;
@@ -77,4 +79,40 @@ export async function probeUpstream(target: ProbeTarget): Promise<ProbeResult> {
       timestamp: Date.now(),
     };
   }
+}
+
+// 每个服务的连通性探测目标。类型是 Record<Service, …>：注册表(src/lib/services)新增服务时
+// 必须在这里补探测，状态页也不必再维护第二份服务清单
+// 探测只发 HEAD 或小 GET，未带 token 的 registry 按协议回 401，同样说明连通
+export const PROBES: Record<Service, ProbeTarget> = {
+  github: {
+    url: 'https://api.github.com/zen',
+    method: 'GET',
+    headers: { 'user-agent': 'github-docker-proxy-status-check' },
+  },
+  docker: { url: 'https://registry-1.docker.io/v2/', method: 'GET', ok: [200, 401] },
+  npm: { url: 'https://registry.npmjs.org/mime', ok: [200] },
+  go: { url: 'https://proxy.golang.org/github.com/gorilla/mux/@v/list', ok: [200] },
+  jsd: { url: 'https://cdn.jsdelivr.net/npm/mime/package.json', ok: [200] },
+  // 未指定版本时 unpkg 先 302 到具体版本
+  unpkg: { url: 'https://unpkg.com/mime/package.json', ok: [200, 302] },
+  maven: { url: 'https://repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2.pom', ok: [200] },
+  mcr: { url: 'https://mcr.microsoft.com/v2/', ok: [200, 401] },
+  pypi: { url: 'https://pypi.org/simple/pip/', ok: [200] },
+};
+
+// 单个服务的探测结果，按服务名共享 PROBE_TTL_MS 缓存（批量端点与单服务端点同一份缓存）
+// 未知服务名返回 null，由调用方给 404
+export function probeService(
+  service: string,
+  force = false
+): Promise<ProbeResult | null> {
+  const target = Object.hasOwn(PROBES, service) ? PROBES[service as Service] : null;
+  if (!target) return Promise.resolve(null);
+  return cachedJson(
+    'status:' + service,
+    PROBE_TTL_MS,
+    () => probeUpstream(target),
+    force
+  ) as Promise<ProbeResult>;
 }

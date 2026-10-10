@@ -99,11 +99,8 @@ better-icons get simple-icons:docker    # 查看 SVG
 | `PROXY_PASSWORD` | 设置后所有代理路径要求鉴权：`Authorization: Basic proxy:<密码>` 或 `x-proxy-key: <密码>`；门禁凭据不会转发给上游，客户端仍可用 `authorization` 带自己的 git PAT / registry token | 不启用 |
 | `DOCKER_HUB_USERNAME` / `DOCKER_HUB_PASSWORD` | Docker Hub 账号或 Access Token，用于换取拉取 token，缓解匿名限速 | 匿名 |
 | `GITHUB_TOKEN` | 为 `api.github.com` 的只读请求补身份，绕开共享出口 IP 的匿名 60 次/时限制。只注入到 `/repos/{owner}/{repo}...` 与 `/rate_limit`，账号端点（`/user`、`/gists`、`/notifications`）与写请求一律不注入，注入身份的 scope 回显也不透出。**风险**：代理是公开的，必须用「未勾选任何 scope」的经典 token 或专用只读账号；带 `repo` scope 时知道私有仓库名的人可借代理读到它 | 不注入 |
-| `WHITE_LIST` / `BLACK_LIST` | JSON 数组的仓库通配名单，如 `["hotier/*"]` | 全放行 |
 | `SIZE_LIMIT` | 超过该大小（GB）的 Release 直接 302 回源 | `999` |
-| `USE_JSDELIVR` | `true` 时小体积 raw/blob 文件改走 jsDelivr | `false` |
 | `RATE_LIMIT` | 每 IP 每分钟代理请求上限，`0` 不限制 | `0` |
-| `CACHE_RELEASE` | `false` 关闭 Release 的强缓存头 | `true` |
 | `DEPLOY_ANALYTICS_TOKEN` | 用于 `/api/deno-analytics` 读取 Deno Deploy 用量（平台禁止 `DENO_` 前缀变量名，本地开发可回退 `DENO_API_TOKEN`）；不配置该端点返回 503 | 未配置 |
 | `STATS_RETENTION_DAYS` | 按天存档的保留天数，超期的日桶会被清扫 | `180` |
 | `STATS_FLUSH_REQUESTS` | 进程内缓冲多少条请求后落库 | `200` |
@@ -259,9 +256,11 @@ simple 索引（HTML 与 JSON）与包 JSON 中内嵌的 `files.pythonhosted.org
 | `/api/health` | 存活检查、版本、统计后端与限流状态 |
 | `/api/stats` | 今日与累计统计（按上游注册表的服务维度拆分，如 github / docker / npm / go / jsd / maven / mcr / 站点；每服务含 requests 原始请求数与 uses 使用次数） |
 | `/api/stats/history?days=30` | 按天存档回看，保留期内可查，超出 `STATS_RETENTION_DAYS` 自动裁剪 |
-| `/api/status/github`、`/api/status/docker` | 上游连通性探测（结果按实例缓存 30 秒） |
-| `/api/status/{npm,go,jsd,unpkg,maven,mcr,pypi}` | 其余上游连通性探测（动态路由） |
+| `/api/status` | 全部上游连通性探测，一次返回（状态页用它，逐个服务取要 9 个请求） |
+| `/api/status/{github,docker,npm,go,jsd,unpkg,maven,mcr,pypi}` | 单个上游探测，留给外部监控（结果按实例缓存 30 秒） |
 | `/api/deno-analytics` | Deno Deploy 用量（需 `DEPLOY_ANALYTICS_TOKEN`，按实例缓存 5 分钟） |
+
+探测与平台用量端点都接受 `?force=1`：跳过服务端缓存立刻回源，状态页的「刷新」按钮用它。
 
 ## 项目结构
 
@@ -284,8 +283,9 @@ simple 索引（HTML 与 JSON）与包 JSON 中内嵌的 `files.pythonhosted.org
 │   │   ├── brand.ts             # 品牌名/主张/主题色（文案单一来源）
 │   │   ├── services.ts          # 上游注册表：前缀 -> 上游 -> 服务标签（路由/鉴权/统计/重定向的唯一来源）
 │   │   ├── proxy.ts             # GitHub/Docker 代理核心
-│   │   ├── config.ts            # 环境变量与名单
+│   │   ├── config.ts            # 环境变量
 │   │   ├── stats.ts             # 统计：进程内缓冲 + KV sum 原子自增（内存后端兜底）
+│   │   ├── platform-usage.ts    # 平台用量按 UTC 日归档（整日覆盖写，只在数值增长时落库）
 │   │   ├── rate-limit.ts        # 每 IP 限流
 │   │   ├── probe.ts             # 上游探测 + 单实例结果缓存（状态页/平台用量）
 │   │   ├── logging.ts           # 结构化请求日志
@@ -321,14 +321,18 @@ npm run deploy    # 需要本地已安装 Deno CLI 并配置 DENO_DEPLOY_TOKEN
 
 ## 已知限制
 
-- 流量按实际写出字节统计（在响应流上逐块累加），客户端中断时只计已写出的部分
+- 流量按实际写出字节统计（在响应流上逐块累加）；客户端中断时上游 `fetch` 随请求的 abort 信号一起取消，因此不再继续搬运没有送达的字节
 - 计数先入进程缓冲区，满 200 次请求或 2 分钟才落库，因此看板数字有同量级延迟；`/api/stats` 读取前会先 flush 本实例增量
 - 存档只到自然日（不细到小时）：日桶按 `STATS_RETENTION_DAYS` 滚动清理，累计桶永久保留，清理每份保留期只做一次且跨实例共享标记
 - 请求数不等于「拉取次数」：一次 `docker pull` 会拆成多个 `/v2/` 请求，一次 `git clone` 也可能是多个请求；表格中的「使用次数」已按取用动作收敛，但多架构镜像的一次 pull 会取 manifest list 与平台 manifest 各一次，仍会计 2
 - 访客按「IP + User-Agent 当日去重」估算，运营商级 NAT 与 CI 场景下仅供参考
 - 限流是**单实例内存**状态，边缘多实例下为尽力而为
-- 状态页数据在浏览器本地缓存（探测与访问统计 60 秒、平台统计 5 分钟），刷新页面不重新请求；需要立刻回源用「刷新」按钮，两块区域各自一个（服务节点列表的按钮在页面标题右侧，只重取探测与表内统计；访问统计的按钮在卡片标题右侧，只重取主站与平台用量），互不影响
+- **Release 下载无法强缓存**：GitHub 的资产地址每次换签名参数（`sig`/`jwt`/`skt`/`ske`），代理改写完 `Location` 后的第二跳 URL 每个请求都不同，任何按 URI 取键的缓存都只会 miss。因此本站不再为 Release 声明 `immutable` 头（原 `CACHE_RELEASE` 开关只作用在永远拿不到正文的第一跳，已删）
+- 状态页数据在浏览器本地缓存（探测与访问统计 60 秒、平台统计 5 分钟），刷新页面不重新请求；需要立刻回源用「刷新」按钮，两块区域各自一个（服务节点列表的按钮在页面标题右侧，只重取探测与表内统计；访问统计的按钮在卡片标题右侧，只重取主站与平台用量），互不影响。后台标签页停止轮询（一个挂着不看的页面就是持续的同源请求流量），切回前台立刻补一轮
 - 上游探测结果与平台用量另有**单实例服务端缓存**（分别 30 秒、5 分钟），同实例多访客共享一次出网探测；边缘多实例下各自缓存，状态最坏滞后一个 TTL
+- 状态页的「平台用量-累计」来自本站按 UTC 日写入 KV 的归档（`lib/platform-usage.ts`）：Deno 分析接口不承诺可查窗口，只保证最近这段，所以累计值随部署时长增长，刚上线时会小于平台控制台口径
+- **带凭据的响应不进公共缓存**：请求带客户端自己的上游凭据（`authorization`，不是门禁密码）或身份由代理代填（`GITHUB_TOKEN`）时，响应一律改写为 `cache-control: private, no-store`。CDN 的缓存键不含 `authorization`，且默认忽略 `Vary`，一旦把这类响应按裸 URL 存下来，就会喂给后续的匿名请求。全站门禁（`x-proxy-key` 或 `Basic proxy:<密码>`）不构成私有：用它取回的内容对所有已授权访客都一样，仍然可缓存
+- 本站只声明缓存头，不额外前置 CDN。以 Cloudflare 为例：它默认忽略 `Vary`、缓存键只有 host+path（按请求头定制缓存键是 Enterprise 特性），而它的服务条款把「用 CDN 分发不属于自己的大文件」列为可以限速/关停的行为（Free/Pro/Business 都受限，只有 Enterprise 或把内容放进 R2/Images/Stream 才豁免）—— 一个第三方内容镜像挂到它前面，省下的配额和账号风险是同一个杠杆
 - `PROXY_PASSWORD` 只保护代理路径，页面与 `/api/health`、`/api/stats` 始终公开
 - 不支持 WebSocket
 

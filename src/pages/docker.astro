@@ -10,12 +10,12 @@ import Layout from '../layouts/Layout.astro';
 >
   <!-- 页面标题 -->
   <div class="mb-6">
-    <h1 class="text-3xl font-medium text-on-surface mb-2">Docker 加速</h1>
+    <h1 class="text-2xl sm:text-3xl font-medium text-on-surface mb-2">Docker 加速</h1>
     <p class="text-on-surface-variant">支持 Docker Hub、GHCR、GCR、Quay、MCR 等镜像仓库的加速拉取</p>
   </div>
 
   <!-- 配置说明 -->
-  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
+  <div class="bg-surface-container-highest rounded-3xl p-4 sm:p-6 mb-6">
     <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
       <span class="icon-[material-symbols--settings] text-primary"></span>
       配置 Docker 镜像加速
@@ -59,31 +59,31 @@ import Layout from '../layouts/Layout.astro';
   </div>
 
   <!-- 支持的 Registry -->
-  <div class="bg-surface-container-highest rounded-3xl p-6">
+  <div class="bg-surface-container-highest rounded-3xl p-4 sm:p-6">
     <h2 class="text-xl font-medium text-on-surface mb-4">支持的 Registry</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] text-center">/v2/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] self-start sm:self-auto text-center">/v2/</code>
         <span class="text-on-surface-variant text-sm">Docker Hub (registry-1.docker.io)</span>
       </div>
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] text-center">/api/ghcr/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] self-start sm:self-auto text-center">/api/ghcr/</code>
         <span class="text-on-surface-variant text-sm">GitHub Container Registry</span>
       </div>
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] text-center">/api/gcr/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] self-start sm:self-auto text-center">/api/gcr/</code>
         <span class="text-on-surface-variant text-sm">Google Container Registry</span>
       </div>
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] text-center">/api/k8s/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] self-start sm:self-auto text-center">/api/k8s/</code>
         <span class="text-on-surface-variant text-sm">Kubernetes Registry</span>
       </div>
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] text-center">/api/quay/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] self-start sm:self-auto text-center">/api/quay/</code>
         <span class="text-on-surface-variant text-sm">Red Hat Quay</span>
       </div>
-      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] text-center">/api/mcr/</code>
+      <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[80px] self-start sm:self-auto text-center">/api/mcr/</code>
         <span class="text-on-surface-variant text-sm">Microsoft Container Registry</span>
       </div>
     </div>

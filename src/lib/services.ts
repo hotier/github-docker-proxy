@@ -97,7 +97,7 @@ export function serviceOf(path: string): Service | null {
 // 「使用次数」口径：一次真正拿到内容的取用算一次，协议握手/元数据/网页浏览/中转跳不计。
 // 与 req（HTTP 请求数）并列为独立计数器，状态看板展示这个。
 // 中转规则：代理会把上游 302 的 Location 改写回本代理（如 gh 下载 302 -> /api/objects/），
-// 这类同站跳不计，等落地的那一跳计；而回源站的绝对地址 302（SIZE_LIMIT/USE_JSDELIVR）
+// 这类同站跳不计，等落地的那一跳计；而回源站的绝对地址 302（SIZE_LIMIT）
 // 意味着下载在代理外完成，这就是终跳，计一次。
 export function isUsageRequest(
   service: Service,

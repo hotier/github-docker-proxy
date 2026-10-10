@@ -183,6 +183,11 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* 行内代码里的长域名/路径(如 files.pythonhosted.org)在窄屏允许断行,否则顶破卡片宽度造成横向滚动 */
+code {
+  overflow-wrap: anywhere;
+}
+
 body {
   font-family: var(--font-roboto);
   background-color: var(--glass-page);
@@ -264,6 +269,15 @@ footer {
   font-weight: 500;
 }
 
+/* 输入框聚焦环:原先写在 UrlConverter.astro 的 <style> 里,但页面/组件级 scoped CSS 不进构建产物,
+   线上从未生效;边框色有 Tailwind 兜底,这圈 focus-visible 环只能放全局(移动端软键盘输入时需要) */
+.url-converter input:focus,
+.url-converter select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-container);
+}
+
 /* 滚动条样式 */
 ::-webkit-scrollbar {
   width: 8px;
@@ -295,6 +309,60 @@ footer {
 .bg-primary ::selection {
   background-color: var(--color-on-primary);
   color: var(--color-primary);
+}
+
+/* ============ 状态页服务表格 ============ */
+/* 窄屏(<md)把 7 列展开成两列卡片:表头文字进单元格(::before + data-label),列宽交给网格。
+   min-w-[780px] 在手机上必然横向滚动,而延迟/流量都是短文本,两列放得下。
+   规则只能放全局:构建产物里只保留了 Layout 的 scoped CSS,页面级 <style> 会被丢掉(实测 dist 无该规则) */
+@media (max-width: 767px) {
+  .status-table {
+    display: block;
+    min-width: 0;
+  }
+
+  .status-table thead {
+    display: none;
+  }
+
+  .status-table tbody,
+  .status-table tr {
+    display: block;
+  }
+
+  .status-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px;
+    padding: 14px 0;
+  }
+
+  .status-table td {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 6px;
+    padding: 0;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .status-table td:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .status-table td[data-label]::before {
+    content: attr(data-label);
+    /* 数值列的 td 带 font-mono,标签若继承它,中文会掉到系统等宽(宋体),和"状态"列不是一个字形 */
+    font-family: var(--font-roboto);
+    font-size: 12px;
+    color: var(--color-on-surface-variant);
+  }
+
+  /* 状态文本自带的 ml-2 是给表格列用的,这里间距已由 gap 接管 */
+  .status-table td[data-label='状态'] span + span {
+    margin-left: 0;
+  }
 }
 
 /* ============ 入场动画 ============ */

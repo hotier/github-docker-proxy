@@ -10,7 +10,7 @@ import Layout from '../layouts/Layout.astro';
 >
   <!-- 页面标题 -->
   <div class="mb-6">
-    <h1 class="text-3xl font-medium text-on-surface mb-2">Packages 加速</h1>
+    <h1 class="text-2xl sm:text-3xl font-medium text-on-surface mb-2">Packages 加速</h1>
     <p class="text-on-surface-variant">npm 与 PyPI 官方源、Go 模块代理、jsDelivr / unpkg 前端资源 CDN、Maven 仓库的加速访问</p>
   </div>
 
@@ -25,7 +25,7 @@ import Layout from '../layouts/Layout.astro';
       <div id="packages-toc-chips" class="lg:hidden flex gap-2 overflow-x-auto pb-4 -mb-1" aria-label="目录"></div>
 
       <!-- npm -->
-      <div id="pkg-npm" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-npm" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-4 sm:p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--npm] text-primary text-2xl"></span>
           npm 加速
@@ -60,7 +60,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- PyPI -->
-      <div id="pkg-pypi" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-pypi" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-4 sm:p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--pypi] text-primary text-2xl"></span>
           PyPI 加速
@@ -99,7 +99,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- Go Modules -->
-      <div id="pkg-go" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-go" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-4 sm:p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--go] text-primary text-2xl"></span>
           Go 模块加速
@@ -132,7 +132,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- jsDelivr -->
-      <div id="pkg-jsd" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-jsd" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-4 sm:p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--jsdelivr] text-primary text-2xl"></span>
           jsDelivr 加速
@@ -163,7 +163,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- unpkg -->
-      <div id="pkg-unpkg" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-unpkg" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-4 sm:p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--unpkg] text-primary text-2xl"></span>
           unpkg 加速
@@ -196,7 +196,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- Maven -->
-      <div id="pkg-maven" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6 mb-6">
+      <div id="pkg-maven" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-4 sm:p-6 mb-6">
         <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
           <span class="icon-[simple-icons--apachemaven] text-primary text-2xl"></span>
           Maven 加速
@@ -238,39 +238,39 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- 支持的端点 -->
-      <div id="pkg-endpoints" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-6">
+      <div id="pkg-endpoints" class="toc-section scroll-mt-20 bg-surface-container-highest rounded-3xl p-4 sm:p-6">
         <h2 class="text-xl font-medium text-on-surface mb-4">支持的端点</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/npm/</code>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] self-start sm:self-auto text-center">/api/npm/</code>
             <span class="text-on-surface-variant text-sm">registry.npmjs.org（官方源，tarball URL 已重写）</span>
           </div>
-          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/pypi/</code>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] self-start sm:self-auto text-center">/api/pypi/</code>
             <span class="text-on-surface-variant text-sm">pypi.org（官方源，索引下载地址已重写）</span>
           </div>
-          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/pyf/</code>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] self-start sm:self-auto text-center">/api/pyf/</code>
             <span class="text-on-surface-variant text-sm">files.pythonhosted.org（wheel/sdist 下载）</span>
           </div>
-          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/goproxy/</code>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] self-start sm:self-auto text-center">/api/goproxy/</code>
             <span class="text-on-surface-variant text-sm">proxy.golang.org（含 sumdb 转发）</span>
           </div>
-          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/jsd/</code>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] self-start sm:self-auto text-center">/api/jsd/</code>
             <span class="text-on-surface-variant text-sm">cdn.jsdelivr.net（npm/gh 资源）</span>
           </div>
-          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/unpkg/</code>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] self-start sm:self-auto text-center">/api/unpkg/</code>
             <span class="text-on-surface-variant text-sm">unpkg.com（npm 前端资源）</span>
           </div>
-          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/maven/</code>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] self-start sm:self-auto text-center">/api/maven/</code>
             <span class="text-on-surface-variant text-sm">repo1.maven.org（Maven Central）</span>
           </div>
-          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
-            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/gmaven/</code>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] self-start sm:self-auto text-center">/api/gmaven/</code>
             <span class="text-on-surface-variant text-sm">dl.google.com（Google Maven）</span>
           </div>
         </div>

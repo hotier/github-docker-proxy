@@ -6,9 +6,11 @@
   <!-- 输入区域 -->
   <!-- backdrop-filter 让每张玻璃卡片各自成层叠上下文,需 relative z-10 才能压住 DOM 靠后的"转换结果"卡片 -->
   <div class="relative z-10 bg-surface rounded-2xl p-4 mb-4 border border-outline-variant">
-    <div class="flex gap-2">
+    <!-- 手机上输入框独占一行:和 128px 的格式选择器并排只剩 150px,长链接看不出转的是什么 -->
+    <div class="flex flex-col gap-2 sm:flex-row">
       <!-- group 让清除按钮能响应整个输入框的悬停,而不是只响应按钮自己 -->
-      <div class="relative flex-1 group">
+      <!-- min-w-0:默认 min-width:auto 会让 input 按 size 撑住最小宽度,320 屏下顶破卡片 -->
+      <div class="relative flex-1 min-w-0 group">
         <input 
           type="text" 
           id="url-input"
@@ -27,10 +29,10 @@
         </button>
       </div>
       <!-- 自定义下拉菜单 -->
-      <div class="relative">
+      <div class="relative self-start sm:self-auto">
         <button 
           id="format-select-btn" aria-haspopup="listbox"
-          class="h-full px-4 py-3 bg-surface-container-low border border-outline-variant rounded-xl text-sm text-on-surface focus:outline-none focus:border-primary transition-colors flex items-center gap-2 min-w-[140px] justify-between"
+          class="h-full px-3 sm:px-4 py-3 bg-surface-container-low border border-outline-variant rounded-xl text-sm text-on-surface focus:outline-none focus:border-primary transition-colors flex items-center gap-2 min-w-[128px] sm:min-w-[140px] shrink-0 justify-between"
         >
           <span id="format-select-text">直接链接</span>
           <span class="icon-[material-symbols--arrow-drop-down] text-lg"></span>
@@ -309,12 +311,3 @@
   const initialOption = Array.from(formatOptions).find(opt => opt.dataset.value === currentFormat);
   if (initialOption) formatSelectText.textContent = initialOption.querySelector('span:last-child').textContent;
 </script>
-
-<style>
-  .url-converter input:focus,
-  .url-converter select:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px var(--color-primary-container);
-  }
-</style>

@@ -1,8 +1,8 @@
 // 增强的代理请求处理器（参考 hunshcn/gh-proxy）
 
-import { CONFIG, isWhitelisted, isBlacklisted, shouldUseJsDelivr, convertToJsDelivr } from "./config";
-import { PREFIX_BY_UPSTREAM, rewriteHostsOf } from "./services";
-import { jsonResponse, filterHeaders, copyHeaders, PROXY_KEY_HEADER, isProxyGateCredential } from "./helpers";
+import { CONFIG } from "./config.ts";
+import { PREFIX_BY_UPSTREAM, rewriteHostsOf } from "./services.ts";
+import { jsonResponse, filterHeaders, copyHeaders, PROXY_KEY_HEADER, isProxyGateCredential } from "./helpers.ts";
 
 // 正文改写需缓冲整个响应，给体积设上限，超限直接流式透传
 const TEXT_REWRITE_LIMIT = 32 * 1024 * 1024;
@@ -43,15 +43,6 @@ function stripRequestHeaders(headers: Headers): Headers {
   return filtered;
 }
 
-// 从路径中提取仓库信息
-function extractRepo(path: string): string | null {
-  const match = path.match(/([^\/]+)\/([^\/]+)/);
-  if (match) {
-    return `${match[1]}/${match[2]}`;
-  }
-  return null;
-}
-
 // 主代理函数
 export async function proxyRequest(
   req: Request,
@@ -62,35 +53,7 @@ export async function proxyRequest(
   const targetUrl = `${upstream.replace(/\/+$/, "")}/${targetPath.replace(/^\/+/, "")}${search}`;
 
   try {
-    // 1. 白名单检查
-    if (!isWhitelisted(targetPath)) {
-      return jsonResponse({ 
-        error: "Forbidden", 
-        message: "Repository not in whitelist",
-        repo: extractRepo(targetPath)
-      }, 403);
-    }
-
-    // 2. 黑名单检查
-    if (isBlacklisted(targetPath)) {
-      return jsonResponse({ 
-        error: "Forbidden", 
-        message: "Repository is blacklisted",
-        repo: extractRepo(targetPath)
-      }, 403);
-    }
-
-    // 3. jsDelivr 加速（小文件）
     const url = new URL(targetUrl);
-    if (shouldUseJsDelivr(url)) {
-      const jsDelivrUrl = convertToJsDelivr(url);
-      if (jsDelivrUrl) {
-        return new Response(null, {
-          status: 302,
-          headers: { location: jsDelivrUrl }
-        });
-      }
-    }
 
     // 流式转发
     const headers = stripRequestHeaders(req.headers);
@@ -110,6 +73,18 @@ export async function proxyRequest(
       headers.set("authorization", `Bearer ${CONFIG.GITHUB_TOKEN}`);
     }
 
+    // 谁的凭据取回的响应，就只能给谁：公共缓存(CDN)的缓存键不含 authorization，
+    // 带上游 token 拿回的私有内容一旦被按裸 URL 存下来，就会喂给后续的匿名请求。
+    // x-proxy-key 与 Basic proxy:<密码> 是全站门禁，用它们取回的内容对所有已授权
+    // 访客都一样，不算私有
+    const clientCredential = req.headers.get("authorization");
+    const underCredential =
+      (clientCredential !== null && !isProxyGateCredential(clientCredential)) || injectToken;
+    const privacyHeaders = (res: Response) => {
+      if (underCredential) res.headers.set("Cache-Control", "private, no-store");
+      return res;
+    };
+
     // git-upload-pack 等带体请求走 fetch 转发:流式 body 必须声明 duplex,
     // 否则 fetch 直接拒绝(500),git clone / POST 类请求全部失败
     const hasBody = req.method !== "GET" && req.method !== "HEAD" && req.body !== null;
@@ -119,10 +94,12 @@ export async function proxyRequest(
       headers,
       body: hasBody ? req.body : undefined,
       redirect: "manual",
+      // 客户端断开即停止搬运：不接 signal 时上游整份响应仍会被读完，白烧出口额度与 CPU
+      signal: req.signal,
       ...(hasBody ? { duplex: "half" } : {}),
     } as RequestInit);
 
-    // 5. 大小检查（如果 Content-Length 存在）
+    // 1. 大小检查（如果 Content-Length 存在）
     const contentLength = resp.headers.get("content-length");
     if (contentLength && CONFIG.SIZE_LIMIT > 0) {
       const sizeGB = parseInt(contentLength) / (1024 * 1024 * 1024);
@@ -134,7 +111,7 @@ export async function proxyRequest(
       }
     }
 
-    // 6. 处理重定向
+    // 2. 处理重定向
     if ([301, 302, 307, 308].includes(resp.status)) {
       const location = resp.headers.get("location");
       if (location) {
@@ -142,11 +119,11 @@ export async function proxyRequest(
         const newResp = new Response(null, { status: resp.status });
         newResp.headers.set("location", newLocation);
         copyHeaders(resp.headers, newResp.headers, ["location"]);
-        return newResp;
+        return privacyHeaders(newResp);
       }
     }
 
-    // 6.5 正文改写(注册表 rewriteHosts 声明的上游)：把元数据/索引页里的绝对 URL 换成本代理前缀，
+    // 3. 正文改写(注册表 rewriteHosts 声明的上游)：把元数据/索引页里的绝对 URL 换成本代理前缀，
     // 后续 tarball/wheel 下载即走加速通道；sha256、integrity 等校验值与 URL 无关，不受影响
     const rewriteHosts = rewriteHostsOf(url.origin);
     const contentType = resp.headers.get("content-type") || "";
@@ -165,24 +142,18 @@ export async function proxyRequest(
         const textResp = new Response(rewritten, { status: resp.status });
         copyHeaders(resp.headers, textResp.headers);
         textResp.headers.set("Access-Control-Allow-Origin", "*");
-        return textResp;
+        return privacyHeaders(textResp);
       }
     }
 
-    // 7. 流式透传（关键：不缓冲，直接传递 body）
+    // 4. 流式透传（关键：不缓冲，直接传递 body）
     const newResp = new Response(resp.body, { status: resp.status });
-    
-    // 8. 添加缓存头（对 Release 文件）
-    if (CONFIG.CACHE_RELEASE && targetPath.includes("/releases/download/")) {
-      newResp.headers.set("Cache-Control", "public, max-age=31536000, immutable");
-    }
-    
     copyHeaders(resp.headers, newResp.headers, injectToken ? ECHOED_IDENTITY_HEADERS : []);
-    
+
     // 添加 CORS 头
     newResp.headers.set("Access-Control-Allow-Origin", "*");
 
-    return newResp;
+    return privacyHeaders(newResp);
   } catch (error) {
     console.error("Proxy error:", error);
     
@@ -223,6 +194,7 @@ export async function handleDockerProxy(
     headers: stripRequestHeaders(req.headers),
     body: hasBody ? req.body : undefined,
     redirect: "manual",
+    signal: req.signal,
     ...(hasBody ? { duplex: "half" } : {}),
   } as RequestInit);
 
@@ -254,6 +226,7 @@ export async function handleDockerProxy(
           method: req.method,
           headers,
           redirect: "manual",
+          signal: req.signal,
         });
       }
     }
