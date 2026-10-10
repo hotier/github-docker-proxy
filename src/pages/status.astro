@@ -38,16 +38,17 @@ const services = [
   <!-- 服务节点列表：每服务一行，状态与请求/流量统计均为文本 -->
   <div class="bg-surface-container-highest rounded-3xl p-6 mb-6" id="status-cards">
     <div class="overflow-x-auto">
-      <table class="w-full text-sm min-w-[780px]">
+      <!-- table-fixed + 百分比列宽：列宽与单元格内容解耦，数字自增动画只换字形不会推挤列宽 -->
+      <table class="w-full table-fixed text-sm min-w-[780px]">
         <thead>
           <tr class="text-left text-on-surface-variant border-b border-surface-variant">
-            <th class="py-3 pr-3 font-medium">服务</th>
-            <th class="py-3 px-3 font-medium">状态</th>
-            <th class="py-3 px-3 font-medium text-right">延迟</th>
-            <th class="py-3 px-3 font-medium text-right">今日请求</th>
-            <th class="py-3 px-3 font-medium text-right">今日流量</th>
-            <th class="py-3 px-3 font-medium text-right">累计请求</th>
-            <th class="py-3 pl-3 font-medium text-right">累计流量</th>
+            <th class="py-3 pr-3 font-medium w-[20%]">服务</th>
+            <th class="py-3 px-3 font-medium w-[13%]">状态</th>
+            <th class="py-3 px-3 font-medium text-right w-[11%]">延迟</th>
+            <th class="py-3 px-3 font-medium text-right w-[15%]">今日请求</th>
+            <th class="py-3 px-3 font-medium text-right w-[13%]">今日流量</th>
+            <th class="py-3 px-3 font-medium text-right w-[15%]">累计请求</th>
+            <th class="py-3 pl-3 font-medium text-right w-[13%]">累计流量</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-surface-variant">
