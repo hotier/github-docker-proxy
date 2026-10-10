@@ -118,23 +118,19 @@ const ogImage = new URL('/og-image.jpg', Astro.url.origin).href;
             ))}
           </nav>
           
-          <!-- 主题切换按钮 -->
-          <div class="relative">
-            <button 
-              id="theme-toggle-btn"
-              class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-primary/15 hover:text-primary transition-colors"
-              aria-label="切换主题"
-              aria-haspopup="menu"
-              aria-expanded="false"
-              title="切换主题"
-            >
-              <span id="theme-icon" aria-hidden="true">
-                <span class="theme-glyph theme-glyph-light icon-[material-symbols--light-mode]"></span>
-                <span class="theme-glyph theme-glyph-dark icon-[material-symbols--dark-mode]"></span>
-                <span class="theme-glyph theme-glyph-system icon-[material-symbols--computer]"></span>
-              </span>
-            </button>
-          </div>
+          <!-- 主题切换：点击按 亮色 → 暗色 → 跟随系统 轮播，偏好存 localStorage -->
+          <button 
+            id="theme-toggle-btn"
+            class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-primary/15 hover:text-primary transition-colors"
+            aria-label="切换主题"
+            title="切换主题"
+          >
+            <span id="theme-icon" aria-hidden="true">
+              <span class="theme-glyph theme-glyph-light icon-[material-symbols--light-mode]"></span>
+              <span class="theme-glyph theme-glyph-dark icon-[material-symbols--dark-mode]"></span>
+              <span class="theme-glyph theme-glyph-system icon-[material-symbols--computer]"></span>
+            </span>
+          </button>
 
           <!-- 移动端菜单按钮 -->
           <button 
@@ -169,24 +165,6 @@ const ogImage = new URL('/og-image.jpg', Astro.url.origin).href;
         </nav>
       </div>
     </header>
-
-    <!-- 主题选择下拉菜单：放在 header 之外。header 自带 backdrop-filter，
-         菜单嵌在其内时磨砂只能取到导航条那一小条的合成快照，看着就是层奶白；
-         脱离该子树后取的是页面真实背景，与「直接链接」下拉同一种玻璃质感 -->
-    <div id="theme-menu" class="hidden fixed bg-surface-container-highest rounded-2xl overflow-hidden shadow-lg border border-outline-variant py-2 z-50 whitespace-nowrap">
-      <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-primary/15 hover:text-primary transition-colors" data-theme="light">
-        <span class="icon-[material-symbols--light-mode] text-lg"></span>
-        <span>亮色模式</span>
-      </button>
-      <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-primary/15 hover:text-primary transition-colors" data-theme="dark">
-        <span class="icon-[material-symbols--dark-mode] text-lg"></span>
-        <span>暗色模式</span>
-      </button>
-      <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-primary/15 hover:text-primary transition-colors" data-theme="system">
-        <span class="icon-[material-symbols--computer] text-lg"></span>
-        <span>跟随系统</span>
-      </button>
-    </div>
 
     <!-- 主内容区：page-enter 让顶层内容块按序淡入，路由切换更连贯 -->
     <main class="flex-grow">
@@ -234,10 +212,12 @@ const ogImage = new URL('/og-image.jpg', Astro.url.origin).href;
 
     // 主题管理
     const themeToggleBtn = document.getElementById('theme-toggle-btn');
-    const themeMenu = document.getElementById('theme-menu');
-    const themeOptions = document.querySelectorAll('.theme-option');
-    
-    // 获取当前主题
+
+    // 点击轮播的顺序,与三种字形一一对应
+    const THEME_ORDER = ['light', 'dark', 'system'];
+    const themeLabel = (theme: string) => (theme === 'light' ? '亮色' : theme === 'dark' ? '暗色' : '跟随系统');
+
+    // 获取当前主题:没有缓存就是跟随系统
     function getCurrentTheme() {
       return localStorage.getItem('theme') || 'system';
     }
@@ -258,10 +238,9 @@ const ogImage = new URL('/og-image.jpg', Astro.url.origin).href;
       // 保存主题偏好
       localStorage.setItem('theme', theme);
       
-      // 更新选中状态
-      themeOptions.forEach(option => {
-        option.classList.toggle('menu-active', option.dataset.theme === theme);
-      });
+      // 按钮提示当前档位(字形已由 data-theme 交给 CSS)
+      themeToggleBtn?.setAttribute('aria-label', `切换主题，当前${themeLabel(theme)}`);
+      themeToggleBtn?.setAttribute('title', `切换主题（当前：${themeLabel(theme)}）`);
     }
     
     // 初始化主题
@@ -269,50 +248,14 @@ const ogImage = new URL('/og-image.jpg', Astro.url.origin).href;
       const savedTheme = getCurrentTheme();
       applyTheme(savedTheme);
     }
-    
-    // 切换菜单显示
-    // 菜单在视口层级定位（header 之外），每次展开时贴到按钮下方并与按钮右对齐
-    const MENU_EDGE_GAP = 8;
-    function positionThemeMenu() {
-      if (!themeMenu || !themeToggleBtn) return;
-      const anchor = themeToggleBtn.getBoundingClientRect();
-      const w = themeMenu.offsetWidth;
-      const left = Math.min(Math.max(MENU_EDGE_GAP, anchor.right - w), window.innerWidth - w - MENU_EDGE_GAP);
-      themeMenu.style.left = Math.round(left) + 'px';
-      themeMenu.style.top = Math.round(anchor.bottom + MENU_EDGE_GAP) + 'px';
-    }
 
-    function setThemeMenu(open) {
-      themeMenu?.classList.toggle('hidden', !open);
-      themeToggleBtn?.setAttribute('aria-expanded', String(open));
-      if (open) positionThemeMenu();
-    }
-    themeToggleBtn?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      setThemeMenu(themeMenu?.classList.contains('hidden'));
-    });
-    window.addEventListener('resize', () => {
-      if (themeMenu && !themeMenu.classList.contains('hidden')) positionThemeMenu();
-    });
-    
-    // 点击外部关闭菜单
-    document.addEventListener('click', (e) => {
-      if (!themeToggleBtn?.contains(e.target) && !themeMenu?.contains(e.target)) {
-        setThemeMenu(false);
-      }
-    });
-    
-    // 主题选项点击
-    themeOptions.forEach(option => {
-      option.addEventListener('click', () => {
-        const theme = option.dataset.theme;
-        applyTheme(theme);
-        setThemeMenu(false);
-      });
+    themeToggleBtn?.addEventListener('click', () => {
+      const next = THEME_ORDER[(THEME_ORDER.indexOf(getCurrentTheme()) + 1) % THEME_ORDER.length];
+      applyTheme(next);
     });
     
     // 监听系统主题变化
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
       if (getCurrentTheme() === 'system') {
         applyTheme('system');
       }

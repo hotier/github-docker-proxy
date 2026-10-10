@@ -238,7 +238,6 @@ footer {
 
 /* 下拉菜单浮层:surface-container-highest(0.78)接近不透明,磨砂看不出材质,
    背后光斑透不出来就等于一块白卡片。浮层单独用更透的玻璃底 + 更强的模糊饱和 */
-#theme-menu,
 #format-select-menu {
   background-color: var(--glass-menu-bg) !important;
   -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -249,7 +248,6 @@ footer {
   background-color: var(--color-surface-container-highest) !important;
 }
 
-#theme-menu,
 #format-select-menu,
 #mobile-menu {
   box-shadow:
@@ -259,9 +257,7 @@ footer {
 
 /* 浮层菜单的当前项:primary-container 在暗色下与蓝灰玻璃几乎同色,
    选中态会被 hover 盖过去。统一改用饱和 primary 薄纱,并覆盖 hover 保证压得住 */
-.theme-option.menu-active,
 .format-option.menu-active,
-.theme-option.menu-active:hover,
 .format-option.menu-active:hover {
   background-color: color-mix(in srgb, var(--color-primary) 26%, transparent);
   color: var(--color-primary);
