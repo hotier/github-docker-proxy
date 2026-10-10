@@ -2,6 +2,8 @@
 // 基础布局组件 - 品牌元信息、导航栏与页脚
 import BrandMark from '../components/BrandMark.astro';
 import { BRAND, THEME_COLOR } from '../lib/brand';
+// 走 Vite 打包(生产输出 dist/client/_astro/*.css);直接 <link> 源码路径在生产会 404
+import '../styles/global.css';
 
 export interface Props {
   title: string;
@@ -82,8 +84,6 @@ const ogImage = new URL('/og-image.jpg', Astro.url.origin).href;
   
   <!-- 字体:使用本地字体栈(--font-roboto),不引入外部字体,避免加载后文字回流抖动 -->
   
-  <!-- Tailwind CSS -->
-  <link rel="stylesheet" href="/src/styles/global.css">
 </head>
 <body class="text-on-surface font-roboto">
   <div class="min-h-screen flex flex-col">
