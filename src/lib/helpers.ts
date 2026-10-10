@@ -9,24 +9,42 @@ export function jsonResponse(data: unknown, status = 200): Response {
   });
 }
 
+// 门禁与上游共用 HTTP 头，所以门禁另开一个头：客户端把 authorization 留给
+// git PAT / registry bearer，把代理密码放 x-proxy-key，两者不再互斥
+export const PROXY_KEY_HEADER = "x-proxy-key";
+
+const GATE_CHALLENGE = { "www-authenticate": 'Basic realm="proxy"' };
+
+function proxyBasic(password: string): string {
+  return "Basic " + btoa(`proxy:${password}`);
+}
+
 export function checkAuth(req: Request): Response | null {
   const password = CONFIG.PROXY_PASSWORD;
   if (!password) return null; // 未设置密码，允许访问
 
-  const auth = req.headers.get("authorization");
-  if (!auth || !auth.startsWith("Basic ")) {
-    return new Response("Unauthorized", {
-      status: 401,
-      headers: { "www-authenticate": 'Basic realm="proxy"' }
-    });
+  const proxyKey = req.headers.get(PROXY_KEY_HEADER);
+  if (proxyKey) {
+    return proxyKey === password ? null : new Response("Forbidden", { status: 403 });
   }
 
-  const expected = "Basic " + btoa(`proxy:${password}`);
-  if (auth !== expected) {
+  const auth = req.headers.get("authorization");
+  if (!auth || !auth.startsWith("Basic ")) {
+    return new Response("Unauthorized", { status: 401, headers: GATE_CHALLENGE });
+  }
+
+  if (auth !== proxyBasic(password)) {
     return new Response("Forbidden", { status: 403 });
   }
 
   return null;
+}
+
+// 门禁凭据不认作上游凭据：转发它等于把代理密码送给第三方，
+// 且会顶掉客户端真正想带的上游鉴权头
+export function isProxyGateCredential(value: string): boolean {
+  const password = CONFIG.PROXY_PASSWORD;
+  return !!password && value === proxyBasic(password);
 }
 
 export function filterHeaders(headers: Headers): Headers {

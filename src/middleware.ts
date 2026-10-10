@@ -1,7 +1,7 @@
 // Astro 中间件注册点必须是 src/middleware.ts
 import { defineMiddleware } from 'astro/middleware';
 import { recordRequest, trackPageView } from './lib/stats';
-import { serviceOf } from './lib/services';
+import { serviceOf, isUsageRequest } from './lib/services';
 import { checkAuth, countOutboundBytes } from './lib/helpers';
 
 const MAIN_PAGES = new Set(['/', '/github', '/docker', '/packages', '/status']);
@@ -29,10 +29,20 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const proxied = await next();
     const durationMs = Date.now() - start;
 
+    // 使用次数在终响应上判定：302 的 Location 已被改写回本站前缀的是中转跳，不计
+    const usage = isUsageRequest(
+      service,
+      path,
+      context.url.search,
+      proxied.status,
+      proxied.headers.get('location'),
+      context.url.origin
+    );
+
     // 响应体是透传流，字节数在流结束后才确定，此时再记账
     const { response, settled } = countOutboundBytes(proxied);
     settled.then((bytes) => {
-      recordRequest({ service, bytes, status: proxied.status, durationMs });
+      recordRequest({ service, bytes, status: proxied.status, durationMs, usage });
     });
 
     return response;

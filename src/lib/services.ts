@@ -94,6 +94,73 @@ export function serviceOf(path: string): Service | null {
   return match(ROUTES, path)?.service ?? null;
 }
 
+// 「使用次数」口径：一次真正拿到内容的取用算一次，协议握手/元数据/网页浏览/中转跳不计。
+// 与 req（HTTP 请求数）并列为独立计数器，状态看板展示这个。
+// 中转规则：代理会把上游 302 的 Location 改写回本代理（如 gh 下载 302 -> /api/objects/），
+// 这类同站跳不计，等落地的那一跳计；而回源站的绝对地址 302（SIZE_LIMIT/USE_JSDELIVR）
+// 意味着下载在代理外完成，这就是终跳，计一次。
+export function isUsageRequest(
+  service: Service,
+  pathname: string,
+  search: string,
+  status: number,
+  location: string | null,
+  proxyOrigin: string
+): boolean {
+  if (status >= 400) return false;
+
+  let pathIsUsage: boolean;
+  switch (service) {
+    case 'github':
+      pathIsUsage =
+        (pathname.startsWith('/api/gh/') &&
+          (pathname.includes('/releases/download/') ||
+            pathname.includes('/archive/') ||
+            (pathname.endsWith('/info/refs') && search.includes('service=git-')))) ||
+        pathname.startsWith('/api/ghraw/') ||
+        pathname.startsWith('/api/codeload/') ||
+        pathname.startsWith('/api/objects/') ||
+        pathname.startsWith('/api/release-assets/');
+      break;
+    case 'docker':
+    case 'mcr':
+      // 一次 pull 拆成 manifest + 每层 blob，只数 manifest ≈「拉了一个镜像」
+      pathIsUsage = pathname.includes('/manifests/');
+      break;
+    case 'npm':
+      pathIsUsage = pathname.endsWith('.tgz');
+      break;
+    case 'go':
+      pathIsUsage = pathname.includes('/@v/') && pathname.endsWith('.zip');
+      break;
+    case 'pypi':
+      // simple 索引与包 JSON 是元数据，文件下载走 pyf 前缀
+      pathIsUsage = pathname.startsWith('/api/pyf/');
+      break;
+    case 'jsd':
+    case 'unpkg': {
+      // 资源本体：带版本(@)且最后一段是文件名；目录列举与解析 302 不算
+      const last = pathname.slice(pathname.lastIndexOf('/') + 1);
+      pathIsUsage = !pathname.endsWith('/') && pathname.includes('@') && last.includes('.');
+      break;
+    }
+    case 'maven':
+      pathIsUsage = /\.(jar|aar|war)$/i.test(pathname);
+      break;
+    default:
+      pathIsUsage = false;
+  }
+  if (!pathIsUsage) return false;
+
+  if (status === 200 || status === 206) return true;
+  if ([301, 302, 307, 308].includes(status)) {
+    // 无 Location 或指回本站 = 中转；外部绝对地址 = 回源终跳
+    if (!location) return false;
+    return !(location.startsWith('/') || location.startsWith(proxyOrigin));
+  }
+  return false;
+}
+
 // 上游 origin -> 本代理前缀，用于把上游 302 的 Location 改写回代理路径
 export const PREFIX_BY_UPSTREAM: Record<string, string> = Object.fromEntries(
   API_ROUTES.map((route) => [route.upstream, route.prefix])

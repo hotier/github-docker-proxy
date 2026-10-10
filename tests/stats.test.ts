@@ -11,6 +11,66 @@ import {
   setStore,
   trackPageView,
 } from '../src/lib/stats.ts';
+import { isUsageRequest } from '../src/lib/services.ts';
+
+const ORIGIN = 'https://proxy.example';
+const usage = (
+  service: any,
+  pathname: string,
+  search = '',
+  status = 200,
+  location: string | null = null
+) => isUsageRequest(service, pathname, search, status, location, ORIGIN);
+
+describe('使用次数判定（一次下载/拉取算一次）', () => {
+  it('GitHub：资产与 clone 算使用，页面浏览与中转跳不算', () => {
+    assert.equal(usage('github', '/api/gh/o/r/releases/download/v1/app.zip'), true);
+    assert.equal(usage('github', '/api/ghraw/o/r/main/README.md'), true);
+    assert.equal(usage('github', '/api/codeload/o/r/legacy.zip'), true);
+    assert.equal(usage('github', '/api/objects/asset'), true);
+    assert.equal(usage('github', '/api/gh/o/r.git/info/refs', '?service=git-upload-pack'), true);
+    assert.equal(usage('github', '/api/gh/o/r'), false, '仓库页面浏览不算');
+    assert.equal(usage('github', '/api/gh/o/r.git/info/refs', ''), false, '无 git 协议参数不算');
+    // 上游 302 被改写回本站前缀 = 中转，落地那一跳才计
+    assert.equal(
+      usage('github', '/api/gh/o/r/releases/download/v1/app.zip', '', 302, '/api/objects/asset'),
+      false
+    );
+    // SIZE_LIMIT 回源 302 是终跳（下载在代理外发生）
+    assert.equal(
+      usage('github', '/api/gh/o/r/releases/download/v1/app.zip', '', 302, 'https://github.com/x'),
+      true
+    );
+    assert.equal(usage('github', '/api/gh/o/r/releases/download/v1/app.zip', '', 404), false);
+  });
+
+  it('Docker/MCR：manifest 算一次拉取，blob 与 /v2/ 握手不算', () => {
+    assert.equal(usage('docker', '/v2/library/nginx/manifests/latest'), true);
+    assert.equal(usage('docker', '/api/ghcr/v2/o/i/manifests/sha256:abc'), true);
+    assert.equal(usage('docker', '/v2/library/nginx/blobs/sha256:abc'), false);
+    assert.equal(usage('docker', '/v2/'), false);
+    assert.equal(usage('mcr', '/api/mcr/v2/o/i/manifests/latest'), true);
+  });
+
+  it('包管理器：tarball/zip/whl/jar 算使用，元数据与索引不算', () => {
+    assert.equal(usage('npm', '/api/npm/vue/-/vue-3.4.0.tgz'), true);
+    assert.equal(usage('npm', '/api/npm/vue'), false);
+    assert.equal(usage('go', '/api/goproxy/github.com/foo/@v/v1.0.0.zip'), true);
+    assert.equal(usage('go', '/api/goproxy/github.com/foo/@v/list'), false);
+    assert.equal(usage('pypi', '/api/pyf/packages/whl/x-1.0.whl'), true);
+    assert.equal(usage('pypi', '/api/pypi/simple/requests/'), false);
+    assert.equal(usage('maven', '/api/maven/maven2/junit/junit/4.13.2/junit-4.13.2.jar'), true);
+    assert.equal(usage('maven', '/api/maven/maven2/junit/junit/4.13.2/junit-4.13.2.pom'), false);
+  });
+
+  it('CDN：带版本的文件资源算使用，目录与同域解析 302 不算', () => {
+    assert.equal(usage('jsd', '/api/jsd/npm/vue@3/dist/vue.global.prod.js'), true);
+    assert.equal(usage('unpkg', '/api/unpkg/vue@3/dist/vue.global.prod.js'), true);
+    assert.equal(usage('unpkg', '/api/unpkg/vue/dist/x.js'), false, '未解析版本不算');
+    assert.equal(usage('jsd', '/api/jsd/npm/vue@3/'), false, '目录不算');
+    assert.equal(usage('unpkg', '/api/unpkg/vue', '', 302, '/api/unpkg/vue@3.4.0'), false);
+  });
+});
 
 const g = globalThis as any;
 
@@ -37,6 +97,17 @@ describe('内存后端统计', () => {
     // 累计桶与今日桶同步增长
     assert.equal(stats.total.github.requests, 2);
     assert.equal(stats.total.docker.bytes, 2048);
+  });
+
+  it('使用次数与请求数独立计数', async () => {
+    recordRequest({ service: 'github', bytes: 10, status: 302, durationMs: 5, usage: false });
+    recordRequest({ service: 'github', bytes: 990, status: 200, durationMs: 50, usage: true });
+
+    const stats = await getStats();
+    assert.equal(stats.today.github.requests, 2, '两条都是 HTTP 请求');
+    assert.equal(stats.today.github.uses, 1, '只有终跳算一次取用');
+    assert.equal(stats.total.github.uses, 1);
+    assert.equal(stats.today.docker.uses, 0);
   });
 
   it('缓冲在读取前落库，读后不重复计数', async () => {

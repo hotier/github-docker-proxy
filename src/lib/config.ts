@@ -25,6 +25,10 @@ export const CONFIG = {
   // Docker Hub 私有仓库凭据（拉取时用于换取 token）
   DOCKER_HUB_USERNAME: getEnv("DOCKER_HUB_USERNAME"),
   DOCKER_HUB_PASSWORD: getEnv("DOCKER_HUB_PASSWORD"),
+
+  // GitHub API token：出口 IP 是平台共享的，匿名 60 次/时早被别的租户耗尽，
+  // 注入后配额升到 5000 次/时
+  GITHUB_TOKEN: getEnv("GITHUB_TOKEN"),
   
   // 白名单/黑名单（JSON 格式环境变量）
   // 例如: WHITE_LIST=["hotier/*","octocat/Hello-World"]

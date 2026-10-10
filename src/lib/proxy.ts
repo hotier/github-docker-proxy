@@ -2,7 +2,7 @@
 
 import { CONFIG, isWhitelisted, isBlacklisted, shouldUseJsDelivr, convertToJsDelivr } from "./config";
 import { PREFIX_BY_UPSTREAM, rewriteHostsOf } from "./services";
-import { jsonResponse, filterHeaders, copyHeaders } from "./helpers";
+import { jsonResponse, filterHeaders, copyHeaders, PROXY_KEY_HEADER, isProxyGateCredential } from "./helpers";
 
 // 正文改写需缓冲整个响应，给体积设上限，超限直接流式透传
 const TEXT_REWRITE_LIMIT = 32 * 1024 * 1024;
@@ -20,13 +20,23 @@ const HOP_BY_HOP_HEADERS = [
   "host",
 ];
 
+// GITHUB_TOKEN 只补到公开仓库元数据与配额端点：/user、/notifications、/gists
+// 这类账号端点会用 token 主人的身份返回数据，代理是公开的，等于把账号信息开放给所有访客
+const TOKEN_INJECT_PATH = /^\/(repos\/[^/]+\/[^/]+|rate_limit)(\/|\?|$)/;
+
+// 上游用注入身份应答时会回显该身份的 scope，不属于客户端该看的东西
+const ECHOED_IDENTITY_HEADERS = ['x-oauth-scopes', 'x-accepted-oauth-scopes'];
+
 // 剥离请求中的 hop-by-hop 头
 function stripRequestHeaders(headers: Headers): Headers {
   const filtered = new Headers();
   headers.forEach((value, key) => {
-    if (!HOP_BY_HOP_HEADERS.includes(key.toLowerCase())) {
-      filtered.set(key, value);
-    }
+    const lower = key.toLowerCase();
+    if (HOP_BY_HOP_HEADERS.includes(lower)) return;
+    // 门禁凭据止于本代理：既不外泄密码，也不顶掉客户端带给上游的鉴权头
+    if (lower === PROXY_KEY_HEADER) return;
+    if (lower === "authorization" && isProxyGateCredential(value)) return;
+    filtered.set(key, value);
   });
   // 设置 User-Agent（GitHub API 要求）
   filtered.set("user-agent", "swiftorigin/1.0");
@@ -82,16 +92,35 @@ export async function proxyRequest(
       }
     }
 
-    // 4. 流式转发
+    // 流式转发
     const headers = stripRequestHeaders(req.headers);
     headers.set("host", url.host);
+
+    // 共享出口 IP 的匿名配额(60/h)常被别的租户耗尽，配置 GITHUB_TOKEN 后补上身份。
+    // 只补只读方法且只补公开仓库/配额端点：代理是公开的，借这个身份发写请求或读账号端点
+    // 等于替陌生人操作账号、把账号数据开放给所有访客
+    const injectToken =
+      !!CONFIG.GITHUB_TOKEN &&
+      url.host === "api.github.com" &&
+      (req.method === "GET" || req.method === "HEAD") &&
+      !headers.get("authorization") &&
+      TOKEN_INJECT_PATH.test(url.pathname);
+
+    if (injectToken) {
+      headers.set("authorization", `Bearer ${CONFIG.GITHUB_TOKEN}`);
+    }
+
+    // git-upload-pack 等带体请求走 fetch 转发:流式 body 必须声明 duplex,
+    // 否则 fetch 直接拒绝(500),git clone / POST 类请求全部失败
+    const hasBody = req.method !== "GET" && req.method !== "HEAD" && req.body !== null;
 
     const resp = await fetch(targetUrl, {
       method: req.method,
       headers,
-      body: req.method !== "GET" && req.method !== "HEAD" ? req.body : undefined,
+      body: hasBody ? req.body : undefined,
       redirect: "manual",
-    });
+      ...(hasBody ? { duplex: "half" } : {}),
+    } as RequestInit);
 
     // 5. 大小检查（如果 Content-Length 存在）
     const contentLength = resp.headers.get("content-length");
@@ -148,7 +177,7 @@ export async function proxyRequest(
       newResp.headers.set("Cache-Control", "public, max-age=31536000, immutable");
     }
     
-    copyHeaders(resp.headers, newResp.headers);
+    copyHeaders(resp.headers, newResp.headers, injectToken ? ECHOED_IDENTITY_HEADERS : []);
     
     // 添加 CORS 头
     newResp.headers.set("Access-Control-Allow-Origin", "*");
@@ -185,13 +214,19 @@ export async function handleDockerProxy(
 ): Promise<Response> {
   const targetUrl = dockerHub + path + search;
 
+  // push 的 blob 上传是带体请求：不转发 body 上游会收到空请求。
+  // body 是流，读一次即耗尽，故 401 后的重试只对无体请求（pull）成立
+  const hasBody = req.method !== "GET" && req.method !== "HEAD" && req.body !== null;
+
   let resp = await fetch(targetUrl, {
     method: req.method,
     headers: stripRequestHeaders(req.headers),
+    body: hasBody ? req.body : undefined,
     redirect: "manual",
-  });
+    ...(hasBody ? { duplex: "half" } : {}),
+  } as RequestInit);
 
-  if (resp.status === 401) {
+  if (resp.status === 401 && !hasBody) {
     const authHeader = resp.headers.get("www-authenticate");
     if (authHeader) {
       const { realm, service, scope } = parseDockerAuth(authHeader);

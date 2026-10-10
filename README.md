@@ -17,8 +17,8 @@
 - Packages：npm（registry.npmjs.org 官方源，元数据内 tarball 绝对 URL 自动重写回本代理）、Go Modules（proxy.golang.org，含 sumdb 校验库转发）、jsDelivr 与 unpkg CDN、Maven Central / Google Maven、PyPI（pypi.org 官方源，simple 索引内的 files.pythonhosted.org 下载地址重写回本代理）加速
 - 流式转发，不缓冲大文件
 - Docker Hub Token 自动换取（支持配置私有账号提升限速）
-- Basic Auth 鉴权（可选，只保护代理路径，说明页面对外开放）
-- 访问与流量统计（按 github / docker / npm / go / jsd / unpkg / maven / mcr / pypi / 站点服务维度；生产使用 Deno KV，开发使用内存）
+- 访问鉴权（可选，只保护代理路径，说明页面对外开放）：`Authorization: Basic proxy:<密码>` 或 `x-proxy-key: <密码>`
+- 访问与流量统计（按 github / docker / npm / go / jsd / unpkg / maven / mcr / pypi / 站点服务维度；生产使用 Deno KV，开发使用内存）。每服务两个计数：HTTP 请求数与「使用次数」——后者按一次下载/拉取算一次（GitHub Release/raw/archive/clone、镜像 manifest、npm tarball、Go module zip、PyPI 文件、CDN 资源、Maven jar，规则见 `src/lib/services.ts` 的 `isUsageRequest`），状态页表格展示的是使用次数
 - 毛玻璃（glassmorphism）界面，亮/暗/跟随系统主题，无闪烁
 - 构建期图标引擎（better-icons + Iconify），零客户端 JS、零外部字体依赖
 
@@ -68,7 +68,8 @@ npm run dev              # http://localhost:4321，自动加载 .env（若存在
 
 ```bash
 npm test                                  # 公开模式
-PROXY_PASSWORD=secret npm test            # 追加 Basic Auth 用例（401/403/主页放行）
+PROXY_PASSWORD=secret npm test            # 追加鉴权用例（401/403/主页放行/x-proxy-key/门禁凭据不透传上游）
+GITHUB_TOKEN=<token> npm test             # 追加 api.github.com 认证配额用例（limit=5000）
 TEST_URL=http://localhost:4321 npm test   # 复用已运行的服务，不再另起端口
 ```
 
@@ -95,8 +96,9 @@ better-icons get simple-icons:docker    # 查看 SVG
 
 | 变量 | 说明 | 默认 |
 |------|------|------|
-| `PROXY_PASSWORD` | 设置后所有代理路径要求 Basic Auth（用户名固定为 `proxy`） | 不启用 |
+| `PROXY_PASSWORD` | 设置后所有代理路径要求鉴权：`Authorization: Basic proxy:<密码>` 或 `x-proxy-key: <密码>`；门禁凭据不会转发给上游，客户端仍可用 `authorization` 带自己的 git PAT / registry token | 不启用 |
 | `DOCKER_HUB_USERNAME` / `DOCKER_HUB_PASSWORD` | Docker Hub 账号或 Access Token，用于换取拉取 token，缓解匿名限速 | 匿名 |
+| `GITHUB_TOKEN` | 为 `api.github.com` 的只读请求补身份，绕开共享出口 IP 的匿名 60 次/时限制。只注入到 `/repos/{owner}/{repo}...` 与 `/rate_limit`，账号端点（`/user`、`/gists`、`/notifications`）与写请求一律不注入，注入身份的 scope 回显也不透出。**风险**：代理是公开的，必须用「未勾选任何 scope」的经典 token 或专用只读账号；带 `repo` scope 时知道私有仓库名的人可借代理读到它 | 不注入 |
 | `WHITE_LIST` / `BLACK_LIST` | JSON 数组的仓库通配名单，如 `["hotier/*"]` | 全放行 |
 | `SIZE_LIMIT` | 超过该大小（GB）的 Release 直接 302 回源 | `999` |
 | `USE_JSDELIVR` | `true` 时小体积 raw/blob 文件改走 jsDelivr | `false` |
@@ -255,7 +257,7 @@ simple 索引（HTML 与 JSON）与包 JSON 中内嵌的 `files.pythonhosted.org
 |------|------|
 | `/`、`/github`、`/docker`、`/packages`、`/status` | 说明页与状态看板 |
 | `/api/health` | 存活检查、版本、统计后端与限流状态 |
-| `/api/stats` | 今日与累计统计（按上游注册表的服务维度拆分，如 github / docker / npm / go / jsd / maven / mcr / 站点） |
+| `/api/stats` | 今日与累计统计（按上游注册表的服务维度拆分，如 github / docker / npm / go / jsd / maven / mcr / 站点；每服务含 requests 原始请求数与 uses 使用次数） |
 | `/api/stats/history?days=30` | 按天存档回看，保留期内可查，超出 `STATS_RETENTION_DAYS` 自动裁剪 |
 | `/api/status/github`、`/api/status/docker` | 上游连通性探测（结果按实例缓存 30 秒） |
 | `/api/status/{npm,go,jsd,unpkg,maven,mcr,pypi}` | 其余上游连通性探测（动态路由） |
@@ -322,7 +324,7 @@ npm run deploy    # 需要本地已安装 Deno CLI 并配置 DENO_DEPLOY_TOKEN
 - 流量按实际写出字节统计（在响应流上逐块累加），客户端中断时只计已写出的部分
 - 计数先入进程缓冲区，满 200 次请求或 2 分钟才落库，因此看板数字有同量级延迟；`/api/stats` 读取前会先 flush 本实例增量
 - 存档只到自然日（不细到小时）：日桶按 `STATS_RETENTION_DAYS` 滚动清理，累计桶永久保留，清理每份保留期只做一次且跨实例共享标记
-- 请求数不等于「拉取次数」：一次 `docker pull` 会拆成多个 `/v2/` 请求，一次 `git clone` 也可能是多个请求
+- 请求数不等于「拉取次数」：一次 `docker pull` 会拆成多个 `/v2/` 请求，一次 `git clone` 也可能是多个请求；表格中的「使用次数」已按取用动作收敛，但多架构镜像的一次 pull 会取 manifest list 与平台 manifest 各一次，仍会计 2
 - 访客按「IP + User-Agent 当日去重」估算，运营商级 NAT 与 CI 场景下仅供参考
 - 限流是**单实例内存**状态，边缘多实例下为尽力而为
 - 状态页数据在浏览器本地缓存（探测与访问统计 60 秒、平台统计 5 分钟），刷新页面不重新请求；需要立刻回源用「刷新」按钮，两块区域各自一个（服务节点列表的按钮在页面标题右侧，只重取探测与表内统计；访问统计的按钮在卡片标题右侧，只重取主站与平台用量），互不影响

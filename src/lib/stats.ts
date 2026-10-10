@@ -10,7 +10,7 @@ import { SERVICE_NAMES, type Service } from './services.ts';
 export type { Service };
 // 站点页面访问与加速服务共用一套计数器字段，'site' 只出现在统计侧
 export type StatTarget = Service | 'site';
-export type Metric = 'req' | 'bytes' | 'err' | 'ms' | 'uv';
+export type Metric = 'req' | 'use' | 'bytes' | 'err' | 'ms' | 'uv';
 export type Bucket = 'd' | 'c';
 
 export type RequestEvent = {
@@ -18,6 +18,8 @@ export type RequestEvent = {
   bytes: number;
   status: number;
   durationMs: number;
+  // 一次「拿到内容」的取用（识别规则见 services.isUsageRequest），与 req 分开计
+  usage?: boolean;
 };
 
 const ALL_TIME = 'all';
@@ -251,7 +253,7 @@ export function setStore(store: StatStore | null): void {
   purgedCutoff = '';
 }
 
-type Acc = { req: number; bytes: number; err: number; ms: number; uv: number };
+type Acc = { req: number; use: number; bytes: number; err: number; ms: number; uv: number };
 let pending = new Map<string, Delta>();
 let pendingEvents = 0;
 let pendingSince = Date.now();
@@ -358,6 +360,7 @@ export function recordRequest(event: RequestEvent): void {
   };
 
   add('req', 1);
+  if (event.usage) add('use', 1);
   add('bytes', Math.max(0, Math.round(event.bytes)));
   add('ms', Math.max(0, Math.round(event.durationMs)));
   if (event.status >= 400) add('err', 1);
@@ -394,6 +397,8 @@ export async function trackPageView(ip: string, userAgent: string): Promise<void
 
 export type ServiceStat = {
   requests: number;
+  // 使用次数：一次下载/拉取算一次（规则见 services.isUsageRequest）
+  uses: number;
   bytes: number;
   errors: number;
   avgLatencyMs: number;
@@ -413,8 +418,9 @@ function summarize(raw: Map<Field, number>): Snapshot {
   const byService = new Map<StatTarget, Acc>();
   for (const [field, value] of raw) {
     const [service, metric] = field.split('|');
-    const acc = byService.get(service as StatTarget) ?? { req: 0, bytes: 0, err: 0, ms: 0, uv: 0 };
+    const acc = byService.get(service as StatTarget) ?? { req: 0, use: 0, bytes: 0, err: 0, ms: 0, uv: 0 };
     if (metric === 'req') acc.req += value;
+    else if (metric === 'use') acc.use += value;
     else if (metric === 'bytes') acc.bytes += value;
     else if (metric === 'err') acc.err += value;
     else if (metric === 'ms') acc.ms += value;
@@ -427,6 +433,7 @@ function summarize(raw: Map<Field, number>): Snapshot {
     const req = acc?.req ?? 0;
     return {
       requests: req,
+      uses: acc?.use ?? 0,
       bytes: acc?.bytes ?? 0,
       errors: acc?.err ?? 0,
       avgLatencyMs: req ? Math.round((acc!.ms / req) * 10) / 10 : 0,

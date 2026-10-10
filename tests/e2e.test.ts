@@ -36,6 +36,11 @@ function authHeaders(): Record<string, string> {
   return { authorization: `Basic ${token}` };
 }
 
+// 用例自己要占用 authorization 转发上游凭据时，门禁改走 x-proxy-key
+function gateHeaders(): Record<string, string> {
+  return PROXY_PASSWORD ? { 'x-proxy-key': PROXY_PASSWORD } : {};
+}
+
 before(async () => {
   if (process.env.TEST_URL) {
     await waitForServer();
@@ -78,6 +83,7 @@ describe('健康与观测端点', () => {
     assert.ok(data.total);
     assert.equal(typeof data.today.pageViews, 'number');
     assert.equal(typeof data.today.github.requests, 'number');
+    assert.equal(typeof data.today.github.uses, 'number');
     assert.equal(typeof data.today.github.bytes, 'number');
     assert.equal(typeof data.today.docker.requests, 'number');
     assert.equal(typeof data.today.npm.requests, 'number');
@@ -237,6 +243,43 @@ describe('GitHub 加速', () => {
     assert.equal(resp.status, direct.status);
   });
 
+  // git clone 的完整协商:info/refs 拿 HEAD sha,再 POST upload-pack 取 pack。
+  // 带体转发缺 duplex 时 fetch 直接抛错(500),这条锁死该回归
+  it('git clone 协议可代理(info/refs + upload-pack POST)', async () => {
+    const adv = await fetchUpstream('/api/gh/octocat/Hello-World.git/info/refs?service=git-upload-pack');
+    assert.equal(adv.status, 200);
+    assert.match(adv.headers.get('content-type') ?? '', /x-git-upload-pack-advertisement/);
+    const sha = (await adv.text()).match(/[0-9a-f]{40}/)?.[0];
+    assert.ok(sha, 'advertisement 里应有 HEAD sha');
+
+    // v1 协商第一轮:want + flush(GitHub 拒收单次带 done 的报文,直连同样 400,不能作代理断言)
+    const pkt = (payload: string) => (payload.length + 10).toString(16).padStart(4, '0') + payload;
+    const body = pkt(`want ${sha} side-band-64k ofs-delta\n`) + '0000';
+
+    const resp = await fetchUpstream('/api/gh/octocat/Hello-World.git/git-upload-pack', {
+      method: 'POST',
+      headers: {
+        ...authHeaders(),
+        'content-type': 'application/x-git-upload-pack-request',
+        'user-agent': 'git/2.50.0',
+      },
+      body,
+    });
+    // 200 + upload-pack-result 即证明请求体被完整转发(缺 duplex 时这里是代理 500)
+    assert.equal(resp.status, 200);
+    assert.match(resp.headers.get('content-type') ?? '', /x-git-upload-pack-result/);
+    await resp.arrayBuffer();
+  });
+
+  // 代理只做透传，不能把客户端的上游凭据吃掉或替换掉，否则带 token 的调用无法使用
+  it('客户端自带的上游鉴权头透传到上游', async () => {
+    const resp = await fetch(`${BASE_URL}/api/api.github.com/user`, {
+      headers: { ...gateHeaders(), authorization: 'Bearer invalid-token-for-passthrough-test' },
+    });
+    assert.equal(resp.status, 401);
+    assert.match(await resp.text(), /Bad credentials/);
+  });
+
   it('未知前缀返回 404 JSON', async () => {
     const resp = await fetch(`${BASE_URL}/api/not-a-proxy-target`);
     assert.equal(resp.status, 404);
@@ -252,6 +295,7 @@ describe('GitHub 加速', () => {
     const stats = await (await fetch(`${BASE_URL}/api/stats`)).json();
     const gh = stats.today.github;
     assert.ok(gh.requests > 0, `requests should be counted: ${JSON.stringify(stats.today)}`);
+    assert.ok(gh.uses > 0, `raw 文件下载应计入使用次数: ${JSON.stringify(stats.today)}`);
     assert.ok(
       gh.bytes >= body.length,
       `bytes should count the streamed body: ${gh.bytes} < ${body.length}`
@@ -263,6 +307,46 @@ describe('Docker 加速', () => {
   it('/v2/ 可达(200 或 401)', async () => {
     const resp = await fetchUpstream('/v2/');
     assert.ok([200, 401].includes(resp.status), `unexpected status ${resp.status}`);
+  });
+
+  // docker pull 的真实链路:index manifest → 子 manifest → layer blob，
+  // 每一跳都要带 accept 头并由代理自动补签 token，任何一跳断掉镜像就拉不下来
+  it('/v2/ 可完成 manifest 到 blob 的完整拉取链路', async () => {
+    const idx = await fetchUpstream('/v2/library/nginx/manifests/latest', {
+      headers: { ...authHeaders(), accept: 'application/vnd.oci.image.index.v1+json' },
+    });
+    assert.equal(idx.status, 200);
+    const index = await idx.json();
+    assert.ok(index.manifests?.length, 'index 应列出子 manifest');
+
+    const childDigest = index.manifests[0].digest;
+    const child = await fetchUpstream(`/v2/library/nginx/manifests/${childDigest}`, {
+      headers: { ...authHeaders(), accept: 'application/vnd.oci.image.manifest.v1+json' },
+    });
+    assert.equal(child.status, 200);
+    const manifest = await child.json();
+    assert.ok(manifest.layers?.length, '子 manifest 应列出 layer');
+
+    // Range 跳验证 blob 透传：只取前 1KB，证明代理拿到的是上游真实 blob 而非错误页
+    const blob = await fetchUpstream(`/v2/library/nginx/blobs/${manifest.layers[0].digest}`, {
+      headers: { ...authHeaders(), range: 'bytes=0-1023' },
+    });
+    assert.ok([200, 206].includes(blob.status), `blob status ${blob.status}`);
+    assert.ok((await blob.arrayBuffer()).byteLength > 0, 'blob 应有实际字节');
+  });
+
+  // push 的 blob 上传是带体 POST。代理内部补签的 token 只有 pull 权限，
+  // 若像早年那样丢掉 body 再自行重试，上游会回 4xx 协议错误而不是标准挑战；
+  // 因此断言拿到的是原样透传的 www-authenticate，交给客户端带权限重发
+  it('/v2/ 带体 POST 透传上游鉴权挑战', async () => {
+    const resp = await fetchUpstream('/v2/library/nginx/blobs/uploads/', {
+      method: 'POST',
+      body: 'x'.repeat(64),
+      headers: { ...gateHeaders(), 'content-type': 'application/octet-stream' },
+    });
+    assert.equal(resp.status, 401);
+    assert.match(resp.headers.get('www-authenticate') ?? '', /Bearer realm=/);
+    assert.match(await resp.text(), /UNAUTHORIZED/);
   });
 
   it('/api/ghcr/ 镜像端点可达', async () => {
@@ -403,6 +487,80 @@ if (PROXY_PASSWORD) {
     it('主页无需凭据即可访问', async () => {
       const resp = await fetch(`${BASE_URL}/`);
       assert.equal(resp.status, 200);
+    });
+
+    // authorization 只有一个，门禁与上游凭据不能同时挤它：门禁另走 x-proxy-key
+    it('x-proxy-key 通过门禁且不占用 authorization', async () => {
+      const resp = await fetch(
+        `${BASE_URL}/api/ghraw/octocat/Hello-World/master/README`,
+        { headers: { 'x-proxy-key': PROXY_PASSWORD } }
+      );
+      assert.equal(resp.status, 200);
+    });
+
+    it('x-proxy-key 错误返回 403', async () => {
+      const resp = await fetch(
+        `${BASE_URL}/api/ghraw/octocat/Hello-World/master/README`,
+        { headers: { 'x-proxy-key': 'wrong-key' } }
+      );
+      assert.equal(resp.status, 403);
+    });
+
+    // 门禁密码发给上游 = 泄漏密码，且会让上游把请求判成坏凭据。
+    // 用 /user 而非配额端点：后者在配置 GITHUB_TOKEN 时会被注入身份，干扰本用例断言
+    it('Basic 门禁凭据不透传给上游', async () => {
+      const resp = await fetch(`${BASE_URL}/api/api.github.com/user`, {
+        headers: authHeaders(),
+      });
+      assert.notEqual(resp.status, 200);
+      // 上游看到的是匿名请求；若把 proxy:密码 发了过去，它会判成坏凭据
+      assert.doesNotMatch(await resp.text(), /Bad credentials/);
+    });
+
+    it('x-proxy-key 门禁下客户端上游凭据仍抵达上游', async () => {
+      const resp = await fetch(`${BASE_URL}/api/api.github.com/user`, {
+        headers: {
+          'x-proxy-key': PROXY_PASSWORD,
+          authorization: 'Bearer invalid-token-for-passthrough-test',
+        },
+      });
+      assert.equal(resp.status, 401);
+      assert.match(await resp.text(), /Bad credentials/);
+    });
+  });
+}
+
+// 仅当启动服务器时设置了 GITHUB_TOKEN 才验证配额注入（token 真假都可跑）
+if (process.env.GITHUB_TOKEN) {
+  describe('GitHub API 配额注入', () => {
+    // 注入生效只有两种形态：token 可用 -> 认证配额 5000；token 不可用 -> 上游拒该身份。
+    // 都不该退回匿名配额，否则说明共享出口 IP 的 60 次/时限制没被绕开
+    it('公开仓库与配额端点使用注入身份', async () => {
+      const resp = await fetchUpstream('/api/api.github.com/rate_limit');
+      const body = await resp.text();
+      if (resp.status === 401) {
+        assert.match(body, /Bad credentials/);
+        return;
+      }
+      assert.equal(resp.status, 200);
+      assert.equal(JSON.parse(body).resources.core.limit, 5000);
+    });
+
+    // 账号端点必须以匿名身份发出：否则代理访客能借这个 token 读到账号自身的数据
+    it('账号端点不注入身份', async () => {
+      const resp = await fetchUpstream('/api/api.github.com/user');
+      const body = await resp.text();
+      // 注入时上游会用该身份应答（token 可用则 200，不可用则 Bad credentials）；
+      // 不注入才是「要求认证」或匿名配额耗尽
+      assert.notEqual(resp.status, 200, `账号端点被注入了身份: ${body.slice(0, 120)}`);
+      assert.doesNotMatch(body, /Bad credentials/);
+    });
+
+    // 注入的是本站身份，其 scope 回显不该转给客户端
+    it('不透出注入身份的 scope', async () => {
+      const resp = await fetchUpstream('/api/api.github.com/rate_limit');
+      await resp.arrayBuffer();
+      assert.equal(resp.headers.get('x-oauth-scopes'), null);
     });
   });
 }
