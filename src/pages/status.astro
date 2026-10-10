@@ -160,14 +160,18 @@ const services = [
 </Layout>
 
 <script>
-  // 状态页要展示的服务节点，与批量探测端点 /api/status 返回的键一致
+  // 状态页要展示的服务节点，与探测结果里的键一致
   const NODES = ['github', 'docker', 'npm', 'go', 'jsd', 'unpkg', 'maven', 'mcr', 'pypi'];
 
-  // 客户端缓存：页面加载只渲染未过期的数据，刷新页面不再触发全量请求
-  // 探测与统计 120 秒，同时兼作到期轮询间隔；服务端探测 TTL 比它大，轮询才不会每轮都回源
-  // 平台统计是 15 分钟粒度指标，5 分钟已足够
-  const CACHE_TTL = { node: 120000, stats: 120000, deno: 300000 };
-  const CACHE_KEY = 'status-cache:';
+  // 一轮刷新只发一个请求：/api/dashboard 同时返回上游探测、本站统计与平台用量三段。
+  // 原本一轮要发三个请求，每个都要过一次中间件与路由，而免费额度按 CPU 时间计费。
+  // 本地有效期只用于页面加载（该 scope 的段都还新鲜就不发请求）；到期轮询总是重取，
+  // 但回不回源由服务端各段的缓存决定（探测 PROBE_TTL_MS、用量 ANALYTICS_TTL_MS），
+  // 同一实例上的多个访客因此共享一次探测与用量计算
+  const SECTION_TTL = { services: 120000, stats: 120000, analytics: 300000 };
+  // 兼作到期轮询间隔；服务端探测 TTL 比它大，轮询才不会每轮都回源
+  const POLL_MS = SECTION_TTL.services;
+  const CACHE_KEY = 'status-cache:dashboard';
 
   // 两张卡片各自一套刷新控件：按钮的忙态与"数据更新于"只影响本卡片
   // services = 服务节点列表（状态/延迟 + 表内各服务请求流量）
@@ -178,23 +182,37 @@ const services = [
   };
   type Scope = keyof typeof SCOPES | 'all';
 
-  function readCache(key, ttl) {
+  // 每个 scope 用到哪几段：手动刷新只重取本卡片需要的段，不为另一张卡片付费。
+  // 统计段两张卡片共用（表内请求流量与访问统计同源），所以三处都含它
+  const SECTIONS: Record<Scope, ('services' | 'stats' | 'analytics')[]> = {
+    services: ['services', 'stats'],
+    stats: ['stats', 'analytics'],
+    all: ['services', 'stats', 'analytics'],
+  };
+
+  // 三段共用一个本地键，各段记自己的写入时间
+  function readLocal() {
     try {
-      const raw = localStorage.getItem(CACHE_KEY + key);
-      if (!raw) return null;
-      const entry = JSON.parse(raw);
-      return Date.now() - entry.ts < ttl ? entry : null;
+      return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
     } catch {
-      return null;
+      return {};
     }
   }
 
-  function writeCache(key, data) {
+  function writeLocal(sections: Record<string, { ts: number; data: any }>) {
+    const store = { ...readLocal(), ...sections };
     try {
-      localStorage.setItem(CACHE_KEY + key, JSON.stringify({ ts: Date.now(), data }));
+      localStorage.setItem(CACHE_KEY, JSON.stringify(store));
     } catch {
       // 隐私模式或配额满时退化为无缓存
     }
+    return store;
+  }
+
+  function takeSections(store: Record<string, { ts: number; data: any }>, names: string[]) {
+    const out: Record<string, { ts: number; data: any }> = {};
+    for (const name of names) if (store[name]) out[name] = store[name];
+    return out;
   }
 
   function showRefreshedAt(scope: Scope, ts: number) {
@@ -202,36 +220,54 @@ const services = [
     cardsOf(scope).forEach((card) => updateElement(card.at, text));
   }
 
-  // 服务节点状态：一次 /api/status 拿齐所有上游探测结果（逐个服务取要 9 个请求）
+  function applySections(sections: Record<string, { ts: number; data: any }>, scope: Scope) {
+    if (sections.services) applyNodes(sections.services.data);
+    if (sections.stats) applyStats(sections.stats.data, scope);
+    if (sections.analytics) applyDenoAnalytics(sections.analytics.data);
+    // 「数据更新于」取本次渲染里最新的那一段
+    const ts = Math.max(
+      sections.stats?.ts ?? 0,
+      sections.analytics?.ts ?? 0,
+      sections.services?.ts ?? 0
+    );
+    showRefreshedAt(scope, ts || Date.now());
+  }
+
   // 检查节点状态：在线 / 异常(上游返回错误码) / 离线(探测失败或上游无响应)
   // force 跳过本地缓存；fresh 额外跳过服务端缓存（只有手动刷新按钮值得付这个出网代价）
-  async function refreshNodes(force: boolean, fresh: boolean) {
+  async function loadDashboard(scope: Scope, force: boolean, fresh: boolean) {
+    const names = SECTIONS[scope];
     if (!force) {
-      const cached = readCache('nodes', CACHE_TTL.node);
-      if (cached) {
-        applyNodes(cached.data);
+      const cached = readLocal();
+      if (names.every((name) => cached[name] && Date.now() - cached[name].ts < SECTION_TTL[name])) {
+        applySections(takeSections(cached, names), scope);
         return;
       }
     }
-    beginBusy('services');
+    beginBusy(scope);
     try {
-      const response = await fetch('/api/status' + (fresh ? '?force=1' : ''));
+      const response = await fetch('/api/dashboard?scope=' + scope + (fresh ? '&force=1' : ''));
       const data = await response.json();
-      // 上游异常/离线同样缓存（就是这一次的探测结果）；探测端点自身取不到结果不缓存
-      writeCache('nodes', data);
-      applyNodes(data);
+      const sections: Record<string, { ts: number; data: any }> = {};
+      for (const name of names) {
+        // 服务端按 scope 省略不属于本卡片的段，缺段不覆盖已有缓存
+        if (data[name] !== undefined) sections[name] = { ts: data.generatedAt || Date.now(), data: data[name] };
+      }
+      // 只渲染本次真的取到的段，其余段留给下一次带自己 scope 的刷新
+      writeLocal(sections);
+      applySections(sections, scope);
     } catch (error) {
-      console.error('Failed to fetch node status:', error);
-      NODES.forEach((type) => updateStatusUI(type, 'offline', null));
+      console.error('Failed to fetch dashboard:', error);
+      if (scope !== 'stats') NODES.forEach((type) => updateStatusUI(type, 'offline', null));
+      if (scope !== 'services') applyDenoAnalytics({ success: false, error: '请求失败' });
     } finally {
-      endBusy('services');
+      endBusy(scope);
     }
   }
 
-  function applyNodes(data: any) {
-    const services = data?.services || {};
+  function applyNodes(services: any) {
     NODES.forEach((type) => {
-      const result = services[type];
+      const result = services?.[type];
       if (!result) {
         updateStatusUI(type, 'offline', null);
         return;
@@ -377,29 +413,6 @@ const services = [
     }
   }
 
-  async function fetchStats(scope: Scope, force: boolean) {
-    if (!force) {
-      const cached = readCache('stats', CACHE_TTL.stats);
-      if (cached) {
-        applyStats(cached.data, scope);
-        showRefreshedAt(scope, cached.ts);
-        return;
-      }
-    }
-    beginBusy(scope);
-    try {
-      const response = await fetch('/api/stats');
-      const data = await response.json();
-      writeCache('stats', data);
-      applyStats(data, scope);
-      showRefreshedAt(scope, Date.now());
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-    } finally {
-      endBusy(scope);
-    }
-  }
-
   // 获取 Deno Deploy Analytics
   // 今日流量优先用原始字节数本地格式化，才能跟着一起递增；旧缓存没有该字段时退回服务端字符串
   function applyDenoAnalytics(data) {
@@ -441,34 +454,6 @@ const services = [
     }
   }
 
-  async function fetchDenoAnalytics(force, fresh) {
-    if (!force) {
-      const cached = readCache('deno', CACHE_TTL.deno);
-      if (cached) {
-        applyDenoAnalytics(cached.data);
-        showRefreshedAt('stats', cached.ts);
-        return;
-      }
-    }
-    beginBusy('stats');
-    try {
-      const response = await fetch('/api/deno-analytics' + (fresh ? '?force=1' : ''));
-      const data = await response.json();
-      writeCache('deno', data);
-      applyDenoAnalytics(data);
-      showRefreshedAt('stats', Date.now());
-    } catch (error) {
-      console.error('Failed to fetch Deno analytics:', error);
-      const note = document.getElementById('deno-analytics-note');
-      if (note) {
-        note.textContent = '平台用量数据获取失败';
-        note.classList.remove('hidden');
-      }
-    } finally {
-      endBusy('stats');
-    }
-  }
-
   // 刷新按钮忙态：本卡片任一请求在途即禁用并让图标旋转，全部落地后恢复
   // scope 为 all 表示这一次取数同时喂两张卡片（页面加载与到期轮询）
   function cardsOf(scope: Scope) {
@@ -495,30 +480,11 @@ const services = [
     });
   }
 
-  // 服务节点列表卡片：上游探测 + 表内各服务的请求/流量
-  function refreshServices(force: boolean, fresh: boolean) {
-    refreshNodes(force, fresh);
-    fetchStats('services', force);
-  }
-
-  // 访问统计卡片：主站浏览/访客 + Deno 平台用量
-  function refreshVisitStats(force: boolean, fresh: boolean) {
-    fetchStats('stats', force);
-    fetchDenoAnalytics(force, fresh);
-  }
-
-  // 加载与轮询共用：/api/stats 一份数据同时含两张卡片，只取一次
-  function refreshAll(force: boolean, fresh: boolean) {
-    refreshNodes(force, fresh);
-    fetchStats('all', force);
-    fetchDenoAnalytics(force, fresh);
-  }
-
   // 初始加载：本地缓存未过期则直接渲染，不发请求
-  refreshAll(false, false);
-  // 手动刷新：只重取各自卡片内的数据，本地与服务端缓存一起绕过，确保拿到真实的新读数
-  document.getElementById('refresh-btn-services')?.addEventListener('click', () => refreshServices(true, true));
-  document.getElementById('refresh-btn-stats')?.addEventListener('click', () => refreshVisitStats(true, true));
+  loadDashboard('all', false, false);
+  // 手动刷新：只重取各自卡片内的段，本地与服务端缓存一起绕过，确保拿到真实的新读数
+  document.getElementById('refresh-btn-services')?.addEventListener('click', () => loadDashboard('services', true, true));
+  document.getElementById('refresh-btn-stats')?.addEventListener('click', () => loadDashboard('stats', true, true));
 
   // 到期自动刷新：只绕过本地缓存（否则同频的 TTL 会让数据永不更新），
   // 仍走服务端缓存，让同一实例上的多个访客共享一次出网探测
@@ -533,9 +499,9 @@ const services = [
     lastActiveAt = Date.now();
     if (idle) {
       idle = false;
-      refreshAll(true, false);
+      loadDashboard('all', true, false);
     } else if (resync) {
-      refreshAll(false, false);
+      loadDashboard('all', false, false);
     }
   }
 
@@ -549,8 +515,8 @@ const services = [
       idle = true;
       return;
     }
-    refreshAll(true, false);
-  }, CACHE_TTL.node);
+    loadDashboard('all', true, false);
+  }, POLL_MS);
   // 切回前台本身就是在看：立刻补一轮，不等下一个 tick
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'hidden') wake(true);

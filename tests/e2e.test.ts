@@ -201,6 +201,45 @@ describe('页面向量', () => {
   });
 });
 
+describe('一键配置脚本', () => {
+  const scripts: Record<string, string> = {
+    npm: '/api/npm/',
+    pypi: '/api/pypi/simple/',
+    go: '/api/goproxy/',
+    git: '/api/gh/',
+  };
+
+  for (const [tool, prefix] of Object.entries(scripts)) {
+    it(`/install/${tool}.sh 返回 sh 脚本且地址来自请求 origin`, async () => {
+      const resp = await fetch(`${BASE_URL}/install/${tool}.sh`);
+      assert.equal(resp.status, 200);
+      assert.match(resp.headers.get('content-type') ?? '', /text\/plain/);
+      const body = await resp.text();
+      assert.match(body, /^#!\/bin\/sh/);
+      assert.ok(body.includes(`${BASE_URL}${prefix}`), `脚本应指向 ${prefix}`);
+      assert.match(body, /还原/);
+    });
+  }
+
+  it('未知工具返回 404 并列出可用脚本', async () => {
+    const resp = await fetch(`${BASE_URL}/install/nope.sh`);
+    assert.equal(resp.status, 404);
+    assert.match(await resp.text(), /npm, pypi, go, git/);
+  });
+
+  it('说明页内嵌脚本链接', async () => {
+    for (const [path, tool] of [
+      ['/packages', 'npm'],
+      ['/packages', 'pypi'],
+      ['/packages', 'go'],
+      ['/github', 'git'],
+    ]) {
+      const html = await (await fetch(`${BASE_URL}${path}`)).text();
+      assert.ok(html.includes(`/install/${tool}.sh`), `${path} 缺少 ${tool} 脚本链接`);
+    }
+  });
+});
+
 // 断言拿到的是上游真实响应,而非代理自身的网络错误(500/502)
 // 上游偶发 429/503,退避重试后再判定
 async function fetchUpstream(
@@ -480,6 +519,36 @@ describe('Packages 加速', () => {
   it('未知服务状态端点返回 404', async () => {
     const resp = await fetch(`${BASE_URL}/api/status/not-a-service`);
     assert.equal(resp.status, 404);
+  });
+
+  it('/api/dashboard 一次返回状态页所需的全部数据', async () => {
+    const data = await (await fetch(`${BASE_URL}/api/dashboard?scope=all`)).json();
+    assert.equal(typeof data.generatedAt, 'number');
+    assert.deepEqual(
+      Object.keys(data.services).sort(),
+      ['docker', 'github', 'go', 'jsd', 'maven', 'mcr', 'npm', 'pypi', 'unpkg']
+    );
+    assert.ok(data.stats.today && data.stats.total, 'stats section missing');
+    assert.equal(typeof data.analytics.success, 'boolean', 'analytics section malformed');
+  });
+
+  it('合并端点按 scope 省略其他卡片的段，手动刷新不为它们付费', async () => {
+    const services = await (await fetch(`${BASE_URL}/api/dashboard?scope=services`)).json();
+    assert.ok(services.services && services.stats);
+    assert.equal(services.analytics, undefined);
+
+    const stats = await (await fetch(`${BASE_URL}/api/dashboard?scope=stats`)).json();
+    assert.ok(stats.stats && stats.analytics);
+    assert.equal(stats.services, undefined);
+  });
+
+  it('合并端点与单服务端点共用同一份探测缓存', async () => {
+    // 同 key(status:npm) 若各打一次上游，timestamp 会不同
+    const [single, merged] = await Promise.all([
+      (await fetch(`${BASE_URL}/api/status/npm`)).json(),
+      (await fetch(`${BASE_URL}/api/dashboard?scope=services`)).json(),
+    ]);
+    assert.equal(merged.services.npm.timestamp, single.timestamp, 'probe cache not shared');
   });
 });
 

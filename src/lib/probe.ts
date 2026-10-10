@@ -1,7 +1,7 @@
 // 上游探测与其结果缓存。缓存是单实例进程内状态（与限流同口径），
 // 作用是让同一实例上的多个访客共享一次出网探测，而不是每人刷新都打上游
 
-import type { Service } from './services.ts';
+import { SERVICE_NAMES, type Service } from './services.ts';
 
 export type ProbeResult = {
   status: 'ok' | 'error';
@@ -116,4 +116,14 @@ export function probeService(
     () => probeUpstream(target),
     force
   ) as Promise<ProbeResult>;
+}
+
+// 全部服务的连通性探测，一次请求喂满状态页：逐个服务取要 9 个请求，
+// 每个请求都要过一次中间件与路由，而免费额度按 CPU 时间计费
+// 各服务仍按 PROBE_TTL_MS 独立缓存，与单服务端点共用同一份结果
+export async function probeAllServices(force = false): Promise<Record<string, ProbeResult>> {
+  const results = await Promise.all(
+    SERVICE_NAMES.map(async (service) => [service, await probeService(service, force)] as const)
+  );
+  return Object.fromEntries(results) as Record<string, ProbeResult>;
 }

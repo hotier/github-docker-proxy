@@ -7,6 +7,7 @@
 // 后端：Deno KV(生产)，内存(dev/test)，与 lib/stats.ts 的注入方式一致
 
 import { CN_OFFSET_MS, cnDay } from './cn-date.ts';
+import { getKv } from './kv.ts';
 
 export type PlatformUsage = {
   requests: number;
@@ -126,10 +127,8 @@ async function getStore(): Promise<PlatformUsageStore> {
   if (activeStore) return activeStore;
   if (!storePromise) {
     storePromise = (async () => {
-      const deno = (globalThis as any).Deno;
-      if (deno?.Kv && typeof deno.Kv.list === 'function') return new KvStore(deno.Kv);
-      if (typeof deno?.openKv === 'function') return new KvStore(await deno.openKv());
-      return new MemoryStore();
+      const kv = await getKv();
+      return kv ? new KvStore(kv) : new MemoryStore();
     })();
   }
   activeStore = await storePromise;
