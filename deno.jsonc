@@ -1,0 +1,17 @@
+{
+  "deploy": {
+    "org": "hotier",
+    "app": "github-docker-proxy",
+    "framework": "astro",
+    "install": "npm ci",
+    "build": "npm run build",
+    "buildTimeout": "8m",
+    "runtime": {
+      "mode": "dynamic",
+      "entrypoint": "dist/server/entry.mjs"
+    }
+  }
+}
+
+
+
