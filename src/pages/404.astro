@@ -1,0 +1,25 @@
+---
+// 站点 404 页面（仅覆盖站内路由；代理前缀未命中时返回的是 JSON 错误）
+import Layout from '../layouts/Layout.astro';
+import BrandMark from '../components/BrandMark.astro';
+import { BRAND } from '../lib/brand';
+---
+
+<Layout
+  title="页面不存在"
+  description="迅源 SwiftOrigin 未找到该页面：可能是链接过期或前缀写错。查看加速用法与服务状态。"
+>
+  <div class="flex flex-col items-center text-center py-10">
+    <BrandMark size={96} class="text-primary mb-6" />
+    <p class="text-6xl font-semibold text-on-surface mb-3">404</p>
+    <h1 class="text-xl font-medium text-on-surface mb-2">这里没有资源</h1>
+    <p class="max-w-md text-on-surface-variant mb-8">
+      {BRAND.name} 没找到你要的页面。若你在改写下载链接，请确认前缀拼写（如 <code class="px-1.5 py-0.5 bg-surface-container-high rounded text-sm font-mono">/api/gh/</code>）；代理接口未命中前缀时返回的是 JSON 错误而非本页。
+    </p>
+    <div class="flex flex-wrap justify-center gap-3">
+      <a href="/" class="px-5 py-2.5 bg-primary text-on-primary rounded-full text-sm font-medium hover:opacity-90 transition-opacity">回加速首页</a>
+      <a href="/status" class="px-5 py-2.5 bg-surface-container-high text-on-surface rounded-full text-sm font-medium hover:bg-primary/15 transition-colors">服务状态</a>
+      <a href="/github" class="px-5 py-2.5 bg-surface-container-high text-on-surface rounded-full text-sm font-medium hover:bg-primary/15 transition-colors">用法说明</a>
+    </div>
+  </div>
+</Layout>

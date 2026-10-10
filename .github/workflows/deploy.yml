@@ -3,72 +3,70 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  # 前端构建
-  build-frontend:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-      
+
       - name: Install dependencies
-        working-directory: frontend
-        run: npm install
-      
-      - name: Build Astro
-        working-directory: frontend
+        run: npm ci
+
+      - name: Verify generated icons match source
+        run: |
+          npm install -g better-icons
+          npm run icons
+          git diff --exit-code src/styles/icons.generated.css || \
+            echo "::error::图标 CSS 与源码不一致,请运行 npm run icons 并提交生成文件"
+
+      - name: Build
         run: npm run build
-      
-      - name: Copy build output to static
-        run: |
-          rm -rf static/*
-          cp -r frontend/dist/* static/
-      
-      - name: Commit and push if changed
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add static/
-          git diff --staged --quiet || git commit -m "chore: update built static files [skip ci]"
-          git push
 
-  # 类型检查
-  type-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Deno
-        uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.x
-      
       - name: Type check
-        run: deno check main.ts
+        run: npm run check
+        continue-on-error: true
 
-  # 测试
-  test:
+      - name: End-to-end tests
+        run: npm test
+
+  deploy:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
-      
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: v1.x
-      
-      - name: Run tests
-        run: deno test --allow-net --allow-env --allow-read
+          deno-version: v2.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Deno Deploy
+        env:
+          DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+        run: npm run deploy

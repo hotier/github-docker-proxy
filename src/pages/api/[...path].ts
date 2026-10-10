@@ -1,23 +1,8 @@
 import type { APIRoute } from 'astro';
-import { proxyRequest, handleDockerProxy } from '../../lib/proxy';
+import { proxyRequest } from '../../lib/proxy';
+import { findApiRoute } from '../../lib/services';
 import { checkRateLimit } from '../../lib/rate-limit';
 import { withLogging } from '../../lib/logging';
-
-const UPSTREAMS: Record<string, string> = {
-  '/api/gh/': 'https://github.com',
-  '/api/ghraw/': 'https://raw.githubusercontent.com',
-  '/api/codeload/': 'https://codeload.github.com',
-  '/api/objects/': 'https://objects.githubusercontent.com',
-  '/api/release-assets/': 'https://release-assets.githubusercontent.com',
-  '/api/api.github.com/': 'https://api.github.com',
-  '/api/ghcr/': 'https://ghcr.io',
-  '/api/gcr/': 'https://gcr.io',
-  '/api/k8s/': 'https://registry.k8s.io',
-  '/api/quay/': 'https://quay.io',
-};
-
-const DOCKER_HUB = 'https://registry-1.docker.io';
-const DOCKER_AUTH = 'https://auth.docker.io';
 
 export const ALL: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
@@ -27,21 +12,23 @@ export const ALL: APIRoute = async ({ request }) => {
   const rateLimitError = checkRateLimit(request);
   if (rateLimitError) return rateLimitError;
   
-  // Docker Registry 代理（/v2/ 路径）
-  if (path.startsWith('/v2/')) {
-    return withLogging(request, () => 
-      handleDockerProxy(request, path, url.search, DOCKER_HUB, DOCKER_AUTH)
+  // Go 校验和数据库:go 命令配置 GOPROXY 后经 {proxy}/sumdb/sum.golang.org/... 查询
+  // 需剥掉 /sumdb/sum.golang.org 前缀转发到 sum.golang.org,放在 /api/goproxy/ 通配之前
+  const SUMDB_PREFIX = '/api/goproxy/sumdb/sum.golang.org/';
+  if (path.startsWith(SUMDB_PREFIX)) {
+    const targetPath = path.slice(SUMDB_PREFIX.length);
+    return withLogging(request, () =>
+      proxyRequest(request, 'https://sum.golang.org', targetPath, url.search)
     );
   }
-  
-  // GitHub 和其他代理
-  for (const [prefix, upstream] of Object.entries(UPSTREAMS)) {
-    if (path.startsWith(prefix)) {
-      const targetPath = path.slice(prefix.length);
-      return withLogging(request, () => 
-        proxyRequest(request, upstream, targetPath, url.search)
-      );
-    }
+
+  // 前缀 -> 上游来自统一注册表(src/lib/services)
+  const route = findApiRoute(path);
+  if (route) {
+    const targetPath = path.slice(route.prefix.length);
+    return withLogging(request, () => 
+      proxyRequest(request, route.upstream, targetPath, url.search)
+    );
   }
   
   return new Response(

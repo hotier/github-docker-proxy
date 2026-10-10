@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { CONFIG } from '../../lib/config';
-import { getMetrics, withLogging } from '../../lib/logging';
+import { withLogging } from '../../lib/logging';
+import { storeName } from '../../lib/stats';
 import { getRateLimitStatus } from '../../lib/rate-limit';
 
 export const GET: APIRoute = async ({ request }) => {
@@ -15,9 +16,9 @@ export const GET: APIRoute = async ({ request }) => {
         timestamp: Date.now(),
         version: CONFIG.VERSION,
         platform: 'Deno Deploy + Astro SSR',
+        statsStore: await storeName(),
         rateLimit: CONFIG.RATE_LIMIT > 0 ? 'enabled' : 'disabled',
-        rateLimitStatus: getRateLimitStatus(clientIp),
-        metrics: getMetrics()
+        rateLimitStatus: getRateLimitStatus(clientIp)
       }),
       {
         status: 200,

@@ -3,7 +3,11 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="GitHub 加速" activeNav="/github">
+<Layout
+  title="GitHub 加速"
+  description="加速 GitHub Release 下载、Git Clone、Raw 文件与源码归档，支持 release-assets、codeload、objects、api.github.com 等全部上游域名。"
+  activeNav="/github"
+>
   <!-- 页面标题 -->
   <div class="mb-6">
     <h1 class="text-3xl font-medium text-on-surface mb-2">GitHub 加速</h1>
@@ -32,8 +36,8 @@ import Layout from '../layouts/Layout.astro';
       <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
         <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
           <span class="text-sm font-medium text-on-surface">下载 Release 文件</span>
-          <button class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="release">
-            <span class="material-symbols-outlined text-lg">content_copy</span>
+          <button aria-label="复制代码" class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="release">
+            <span class="icon-[material-symbols--content-copy] text-lg"></span>
           </button>
         </div>
         <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
@@ -50,8 +54,8 @@ import Layout from '../layouts/Layout.astro';
       <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
         <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
           <span class="text-sm font-medium text-on-surface">克隆 Git 仓库</span>
-          <button class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="clone">
-            <span class="material-symbols-outlined text-lg">content_copy</span>
+          <button aria-label="复制代码" class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="clone">
+            <span class="icon-[material-symbols--content-copy] text-lg"></span>
           </button>
         </div>
         <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
@@ -68,8 +72,8 @@ import Layout from '../layouts/Layout.astro';
       <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
         <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
           <span class="text-sm font-medium text-on-surface">下载 Raw 文件</span>
-          <button class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="raw">
-            <span class="material-symbols-outlined text-lg">content_copy</span>
+          <button aria-label="复制代码" class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="raw">
+            <span class="icon-[material-symbols--content-copy] text-lg"></span>
           </button>
         </div>
         <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
@@ -86,8 +90,8 @@ import Layout from '../layouts/Layout.astro';
       <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
         <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
           <span class="text-sm font-medium text-on-surface">下载源码归档</span>
-          <button class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="archive">
-            <span class="material-symbols-outlined text-lg">content_copy</span>
+          <button aria-label="复制代码" class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-code="archive">
+            <span class="icon-[material-symbols--content-copy] text-lg"></span>
           </button>
         </div>
         <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
@@ -161,9 +165,9 @@ import Layout from '../layouts/Layout.astro';
       const codeBlock = btn.closest('.bg-surface')?.querySelector('.font-mono');
       if (codeBlock) {
         navigator.clipboard.writeText(codeBlock.textContent || '');
-        btn.innerHTML = '<span class="material-symbols-outlined text-lg">check</span>';
+        btn.innerHTML = '<span class="icon-[material-symbols--check] text-lg"></span>';
         setTimeout(() => {
-          btn.innerHTML = '<span class="material-symbols-outlined text-lg">content_copy</span>';
+          btn.innerHTML = '<span class="icon-[material-symbols--content-copy] text-lg"></span>';
         }, 2000);
       }
     });

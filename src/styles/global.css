@@ -1,7 +1,8 @@
-/* Material Design 3 主题配置 */
+/* Material Design 3 主题配置 + 毛玻璃 (Glassmorphism) 风格 */
 /* 从 Google Material Theme Builder 导出的色板 */
 
 @import "tailwindcss";
+@import "./icons.generated.css";
 
 @theme {
   /* Primary - 蓝绿色 */
@@ -28,29 +29,39 @@
   --color-error-container: #ffdad6;
   --color-on-error-container: #410002;
   
-  /* Surface */
-  --color-background: #fafdfd;
+  /* Surface — 毛玻璃:半透明表面 */
+  --color-background: rgba(255, 255, 255, 0.55);
   --color-on-background: #191c1c;
-  --color-surface: #fafdfd;
+  --color-surface: rgba(255, 255, 255, 0.55);
   --color-on-surface: #191c1c;
-  --color-surface-variant: #dae4e5;
+  --color-surface-variant: rgba(218, 228, 229, 0.55);
   --color-on-surface-variant: #3f4849;
   
   /* Outline */
   --color-outline: #6f7979;
-  --color-outline-variant: #bfc8c9;
+  --color-outline-variant: rgba(191, 200, 201, 0.55);
   
-  /* Surface Container */
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f3f7f7;
-  --color-surface-container: #edf1f2;
-  --color-surface-container-high: #e7ebec;
-  --color-surface-container-highest: #e1e5e6;
+  /* Surface Container — 由低到高逐步加厚的磨砂层 */
+  --color-surface-container-lowest: rgba(255, 255, 255, 0.7);
+  --color-surface-container-low: rgba(255, 255, 255, 0.62);
+  --color-surface-container: rgba(255, 255, 255, 0.5);
+  --color-surface-container-high: rgba(255, 255, 255, 0.66);
+  --color-surface-container-highest: rgba(255, 255, 255, 0.78);
   
   /* Inverse */
   --color-inverse-surface: #2e3131;
   --color-inverse-on-surface: #eff1f1;
   --color-inverse-primary: #62d4ff;
+
+  /* 毛玻璃氛围变量 — 亮色 */
+  --glass-page: #e3f2f8;
+  --glass-menu-bg: rgba(255, 255, 255, 0.55);
+  --glass-blobs:
+    radial-gradient(40rem 40rem at 8% -10%, rgba(0, 158, 200, 0.28), transparent 62%),
+    radial-gradient(34rem 34rem at 94% 4%, rgba(124, 108, 230, 0.22), transparent 60%),
+    radial-gradient(46rem 46rem at 50% 112%, rgba(46, 196, 154, 0.24), transparent 64%);
+  --glass-highlight: rgba(255, 255, 255, 0.65);
+  --glass-shadow: rgba(20, 60, 90, 0.16);
   
   /* 字体 */
   --font-roboto: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif;
@@ -80,25 +91,35 @@
   --color-error-container: #93000a;
   --color-on-error-container: #ffb4ab;
   
-  --color-background: #191c1c;
+  --color-background: rgba(16, 24, 32, 0.52);
   --color-on-background: #e1e3e3;
-  --color-surface: #191c1c;
+  --color-surface: rgba(16, 24, 32, 0.52);
   --color-on-surface: #e1e3e3;
-  --color-surface-variant: #3f4849;
+  --color-surface-variant: rgba(63, 72, 73, 0.55);
   --color-on-surface-variant: #bfc8c9;
   
-  --color-outline: #899293;
-  --color-outline-variant: #3f4849;
+  --color-outline: rgba(137, 146, 147, 0.6);
+  --color-outline-variant: rgba(63, 72, 73, 0.6);
   
-  --color-surface-container-lowest: #0e1111;
-  --color-surface-container-low: #191c1c;
-  --color-surface-container: #1d2020;
-  --color-surface-container-high: #272b2b;
-  --color-surface-container-highest: #323636;
+  --color-surface-container-lowest: rgba(8, 14, 20, 0.6);
+  --color-surface-container-low: rgba(16, 24, 32, 0.6);
+  --color-surface-container: rgba(24, 34, 45, 0.55);
+  --color-surface-container-high: rgba(33, 45, 58, 0.62);
+  --color-surface-container-highest: rgba(43, 57, 72, 0.66);
   
   --color-inverse-surface: #e1e3e3;
   --color-inverse-on-surface: #191c1c;
   --color-inverse-primary: #006780;
+
+  /* 毛玻璃氛围变量 — 暗色 */
+  --glass-page: #060d14;
+  --glass-menu-bg: rgba(36, 48, 62, 0.55);
+  --glass-blobs:
+    radial-gradient(42rem 42rem at 8% -10%, rgba(0, 190, 255, 0.22), transparent 60%),
+    radial-gradient(34rem 34rem at 94% 6%, rgba(122, 92, 255, 0.18), transparent 60%),
+    radial-gradient(48rem 48rem at 50% 114%, rgba(0, 220, 180, 0.14), transparent 62%);
+  --glass-highlight: rgba(255, 255, 255, 0.12);
+  --glass-shadow: rgba(0, 0, 0, 0.5);
 }
 
 /* 系统暗色模式支持 */
@@ -124,51 +145,127 @@
     --color-error-container: #93000a;
     --color-on-error-container: #ffb4ab;
     
-    --color-background: #191c1c;
+    --color-background: rgba(16, 24, 32, 0.52);
     --color-on-background: #e1e3e3;
-    --color-surface: #191c1c;
+    --color-surface: rgba(16, 24, 32, 0.52);
     --color-on-surface: #e1e3e3;
-    --color-surface-variant: #3f4849;
+    --color-surface-variant: rgba(63, 72, 73, 0.55);
     --color-on-surface-variant: #bfc8c9;
     
-    --color-outline: #899293;
-    --color-outline-variant: #3f4849;
+    --color-outline: rgba(137, 146, 147, 0.6);
+    --color-outline-variant: rgba(63, 72, 73, 0.6);
     
-    --color-surface-container-lowest: #0e1111;
-    --color-surface-container-low: #191c1c;
-    --color-surface-container: #1d2020;
-    --color-surface-container-high: #272b2b;
-    --color-surface-container-highest: #323636;
+    --color-surface-container-lowest: rgba(8, 14, 20, 0.6);
+    --color-surface-container-low: rgba(16, 24, 32, 0.6);
+    --color-surface-container: rgba(24, 34, 45, 0.55);
+    --color-surface-container-high: rgba(33, 45, 58, 0.62);
+    --color-surface-container-highest: rgba(43, 57, 72, 0.66);
     
     --color-inverse-surface: #e1e3e3;
     --color-inverse-on-surface: #191c1c;
     --color-inverse-primary: #006780;
+
+    /* 毛玻璃氛围变量 — 暗色 */
+    --glass-page: #060d14;
+    --glass-menu-bg: rgba(36, 48, 62, 0.55);
+    --glass-blobs:
+      radial-gradient(42rem 42rem at 8% -10%, rgba(0, 190, 255, 0.22), transparent 60%),
+      radial-gradient(34rem 34rem at 94% 6%, rgba(122, 92, 255, 0.18), transparent 60%),
+      radial-gradient(48rem 48rem at 50% 114%, rgba(0, 220, 180, 0.14), transparent 62%);
+    --glass-highlight: rgba(255, 255, 255, 0.12);
+    --glass-shadow: rgba(0, 0, 0, 0.5);
   }
 }
 
 /* 基础样式 */
+html {
+  /* 预留滚动条槽位:页面高度不同时(如 /github -> /)不再发生宽度跳变 */
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: var(--font-roboto);
-  background-color: var(--color-surface);
+  background-color: var(--glass-page);
   color: var(--color-on-surface);
   line-height: 1.6;
 }
 
-/* Material Symbols 图标 */
-.material-symbols-outlined {
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 400,
-    'GRAD' 0,
-    'opsz' 24;
+/* 氛围光斑画在固定层上:滚动、滚动条宽度变化、backdrop-filter 重绘都不触发重排 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--glass-blobs);
 }
 
-.material-symbols-outlined.fill {
-  font-variation-settings:
-    'FILL' 1,
-    'wght' 400,
-    'GRAD' 0,
-    'opsz' 24;
+/* ============ 毛玻璃核心 ============ */
+/* 所有表面层级应用磨砂模糊 */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .bg-surface,
+  .bg-surface-container-lowest,
+  .bg-surface-container-low,
+  .bg-surface-container,
+  .bg-surface-container-high,
+  .bg-surface-container-highest,
+  header,
+  footer {
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+  }
+}
+
+/* 主要卡片 / 代码块 / 导航:顶部高光 + 悬浮投影 + 玻璃描边 */
+.bg-surface,
+.bg-surface-container-highest,
+header,
+footer {
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 16px 40px -20px var(--glass-shadow);
+}
+
+header {
+  border-bottom-color: var(--glass-highlight);
+}
+
+footer {
+  background-color: var(--color-surface-container);
+  border-top-color: var(--glass-highlight);
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+}
+
+/* 下拉菜单浮层:surface-container-highest(0.78)接近不透明,磨砂看不出材质,
+   背后光斑透不出来就等于一块白卡片。浮层单独用更透的玻璃底 + 更强的模糊饱和 */
+#theme-menu,
+#format-select-menu {
+  background-color: var(--glass-menu-bg) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+}
+
+#mobile-menu {
+  background-color: var(--color-surface-container-highest) !important;
+}
+
+#theme-menu,
+#format-select-menu,
+#mobile-menu {
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 24px 48px -16px var(--glass-shadow);
+}
+
+/* 浮层菜单的当前项:primary-container 在暗色下与蓝灰玻璃几乎同色,
+   选中态会被 hover 盖过去。统一改用饱和 primary 薄纱,并覆盖 hover 保证压得住 */
+.theme-option.menu-active,
+.format-option.menu-active,
+.theme-option.menu-active:hover,
+.format-option.menu-active:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 26%, transparent);
+  color: var(--color-primary);
+  font-weight: 500;
 }
 
 /* 滚动条样式 */
@@ -190,8 +287,36 @@ body {
   background: var(--color-outline);
 }
 
-/* 选中文本样式 */
+/* 选中文本样式:用饱和的主题色做选中底,别用 primary-container
+   (暗色下它和蓝灰玻璃底几乎同色,选中范围看不出来) */
 ::selection {
-  background-color: var(--color-primary-container);
-  color: var(--color-on-primary-container);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+/* 主题色实底的文字(活动导航、主按钮)反过来用深色选中底,否则同色糊成一片 */
+.bg-primary::selection,
+.bg-primary ::selection {
+  background-color: var(--color-on-primary);
+  color: var(--color-primary);
+}
+
+/* ============ 入场动画 ============ */
+/* 页面是整页跳转，新文档加载即播放：顶层内容块自下而上淡入并按序错开，
+   让路由切换看起来是延续而不是瞬间替换 */
+@keyframes page-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter > * {
+    animation: page-rise 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  .page-enter > :nth-child(2) { animation-delay: 70ms; }
+  .page-enter > :nth-child(3) { animation-delay: 140ms; }
+  .page-enter > :nth-child(4) { animation-delay: 210ms; }
+  .page-enter > :nth-child(5) { animation-delay: 280ms; }
+  .page-enter > :nth-child(n + 6) { animation-delay: 350ms; }
 }

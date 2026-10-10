@@ -1,0 +1,368 @@
+---
+// 包与资源加速页面：npm / PyPI / Go Modules / jsDelivr / unpkg / Maven
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Packages 加速"
+  description="加速 npm 与 PyPI 官方源、Go 模块代理、jsDelivr 与 unpkg 资源 CDN、Maven Central 与 Google Maven；元数据内的下载地址自动改写回本代理。"
+  activeNav="/packages"
+>
+  <!-- 页面标题 -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-medium text-on-surface mb-2">Packages 加速</h1>
+    <p class="text-on-surface-variant">npm 与 PyPI 官方源、Go 模块代理、jsDelivr / unpkg 前端资源 CDN、Maven 仓库的加速访问</p>
+  </div>
+
+  <div class="lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-8">
+    <!-- 侧边目录：无卡片底色，靠左侧竖线指示当前分区；链接由脚本按页面卡片自动生成 -->
+    <aside class="hidden lg:block">
+      <nav id="packages-toc" aria-label="目录" class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
+        <p class="text-base font-medium text-on-surface px-5 mb-2">目录</p>
+      </nav>
+    </aside>
+    <div class="min-w-0">
+      <div id="packages-toc-chips" class="lg:hidden flex gap-2 overflow-x-auto pb-4 -mb-1" aria-label="目录"></div>
+
+      <!-- npm -->
+      <div id="pkg-npm" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+        <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
+          <span class="icon-[simple-icons--npm] text-primary text-2xl"></span>
+          npm 加速
+        </h2>
+
+        <div class="bg-primary-container text-on-primary-container rounded-2xl px-5 py-4 mb-5 flex gap-3 text-sm">
+          <span class="icon-[material-symbols--info] text-xl shrink-0"></span>
+          <span>
+            <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">/api/npm/</code>
+            透传 npm 官方源 registry.npmjs.org。包元数据里的 tarball 绝对 URL 会自动重写为本代理地址，
+            元数据与 tarball 下载全程走同一加速通道，integrity 完整性校验不受影响。
+          </span>
+        </div>
+
+        <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+          <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+            <span class="text-sm font-medium text-on-surface">设置 registry</span>
+            <button aria-label="复制代码" class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors">
+              <span class="icon-[material-symbols--content-copy] text-lg"></span>
+            </button>
+          </div>
+          <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+            <span class="text-on-surface-variant opacity-70"># npm（全局）</span><br>
+            <span class="text-primary font-semibold">npm</span> config set registry <span class="text-tertiary">{Astro.url.origin}/api/npm/</span><br><br>
+            <span class="text-on-surface-variant opacity-70"># 或项目内 .npmrc</span><br>
+            <span class="text-tertiary">registry={Astro.url.origin}/api/npm/</span><br><br>
+            <span class="text-on-surface-variant opacity-70"># pnpm / yarn</span><br>
+            <span class="text-primary font-semibold">pnpm</span> config set registry <span class="text-tertiary">{Astro.url.origin}/api/npm/</span><br>
+            <span class="text-primary font-semibold">yarn</span> config set registry <span class="text-tertiary">{Astro.url.origin}/api/npm/</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PyPI -->
+      <div id="pkg-pypi" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+        <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
+          <span class="icon-[simple-icons--pypi] text-primary text-2xl"></span>
+          PyPI 加速
+        </h2>
+
+        <div class="bg-primary-container text-on-primary-container rounded-2xl px-5 py-4 mb-5 flex gap-3 text-sm">
+          <span class="icon-[material-symbols--info] text-xl shrink-0"></span>
+          <span>
+            <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">/api/pypi/</code>
+            透传 PyPI 官方源 pypi.org。simple 索引（HTML 与 JSON）和包 JSON 里内嵌的
+            <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">files.pythonhosted.org</code>
+            绝对下载地址会被改写回本代理（<code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">/api/pyf/</code>），
+            因此索引与 wheel/sdist 下载全程走同一加速通道；URL 上的 <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">#sha256=</code> 校验片段不变，pip 的完整性校验不受影响。
+          </span>
+        </div>
+
+        <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+          <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+            <span class="text-sm font-medium text-on-surface">设置 index-url</span>
+            <button aria-label="复制代码" class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors">
+              <span class="icon-[material-symbols--content-copy] text-lg"></span>
+            </button>
+          </div>
+          <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+            <span class="text-on-surface-variant opacity-70"># pip（全局写入配置，对所有项目生效）</span><br>
+            <span class="text-primary font-semibold">pip</span> config set global.index-url <span class="text-tertiary">{Astro.url.origin}/api/pypi/simple/</span><br><br>
+            <span class="text-on-surface-variant opacity-70"># 或单次安装 / CI 环境变量</span><br>
+            <span class="text-primary font-semibold">pip</span> install -i <span class="text-tertiary">{Astro.url.origin}/api/pypi/simple/</span> requests<br>
+            <span class="text-primary font-semibold">export</span> PIP_INDEX_URL=<span class="text-tertiary">{Astro.url.origin}/api/pypi/simple/</span><br><br>
+            <span class="text-on-surface-variant opacity-70"># uv（读同一个 PIP_INDEX_URL，也可显式指定）</span><br>
+            <span class="text-primary font-semibold">uv</span> pip install --index-url <span class="text-tertiary">{Astro.url.origin}/api/pypi/simple/</span> requests<br><br>
+            <span class="text-on-surface-variant opacity-70"># 验证（输出中的 href 应指向 /api/pyf/，且不再出现 files.pythonhosted.org）</span><br>
+            <span class="text-primary font-semibold">curl</span> <span class="text-tertiary">{Astro.url.origin}/api/pypi/simple/requests/</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Go Modules -->
+      <div id="pkg-go" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+        <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
+          <span class="icon-[simple-icons--go] text-primary text-2xl"></span>
+          Go 模块加速
+        </h2>
+
+        <div class="bg-primary-container text-on-primary-container rounded-2xl px-5 py-4 mb-5 flex gap-3 text-sm">
+          <span class="icon-[material-symbols--info] text-xl shrink-0"></span>
+          <span>
+            <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">/api/goproxy/</code>
+            透传 proxy.golang.org，并已适配 Go 1.15+ 的 sumdb 校验查询（自动转发 sum.golang.org），配置 GOPROXY 后校验和验证同样走本代理。
+          </span>
+        </div>
+
+        <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+          <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+            <span class="text-sm font-medium text-on-surface">设置 GOPROXY</span>
+            <button aria-label="复制代码" class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors">
+              <span class="icon-[material-symbols--content-copy] text-lg"></span>
+            </button>
+          </div>
+          <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+            <span class="text-on-surface-variant opacity-70"># 推荐：先走本代理，未收录模块直连源站（go env -w 对所有平台通用）</span><br>
+            <span class="text-primary font-semibold">go</span> env -w GOPROXY=<span class="text-tertiary">{Astro.url.origin}/api/goproxy/</span>,direct<br><br>
+            <span class="text-on-surface-variant opacity-70"># 或临时使用环境变量</span><br>
+            <span class="text-primary font-semibold">export</span> GOPROXY=<span class="text-tertiary">{Astro.url.origin}/api/goproxy/</span>,direct<br><br>
+            <span class="text-on-surface-variant opacity-70"># 验证（应输出版本列表）</span><br>
+            <span class="text-primary font-semibold">curl</span> <span class="text-tertiary">{Astro.url.origin}/api/goproxy/github.com/gorilla/mux/@v/list</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- jsDelivr -->
+      <div id="pkg-jsd" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+        <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
+          <span class="icon-[simple-icons--jsdelivr] text-primary text-2xl"></span>
+          jsDelivr 加速
+        </h2>
+
+        <div class="bg-primary-container text-on-primary-container rounded-2xl px-5 py-4 mb-5 flex gap-3 text-sm">
+          <span class="icon-[material-symbols--info] text-xl shrink-0"></span>
+          <span>
+            将 <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">cdn.jsdelivr.net</code> 替换为
+            <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">{Astro.url.origin}/api/jsd</code> 即可，路径保持不变。
+          </span>
+        </div>
+
+        <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+          <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+            <span class="text-sm font-medium text-on-surface">HTML 中引用</span>
+            <button aria-label="复制代码" class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors">
+              <span class="icon-[material-symbols--content-copy] text-lg"></span>
+            </button>
+          </div>
+          <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+            <span class="text-on-surface-variant opacity-70"># 原始链接</span><br>
+            &lt;script src="<span class="text-tertiary">https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js</span>"&gt;<br><br>
+            <span class="text-on-surface-variant opacity-70"># 加速链接</span><br>
+            &lt;script src="<span class="text-tertiary">{Astro.url.origin}/api/jsd/npm/vue@3/dist/vue.global.prod.js</span>"&gt;
+          </div>
+        </div>
+      </div>
+
+      <!-- unpkg -->
+      <div id="pkg-unpkg" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+        <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
+          <span class="icon-[simple-icons--unpkg] text-primary text-2xl"></span>
+          unpkg 加速
+        </h2>
+
+        <div class="bg-primary-container text-on-primary-container rounded-2xl px-5 py-4 mb-5 flex gap-3 text-sm">
+          <span class="icon-[material-symbols--info] text-xl shrink-0"></span>
+          <span>
+            将 <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">unpkg.com</code> 替换为
+            <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">{Astro.url.origin}/api/unpkg</code> 即可，路径保持不变。
+            未写死版本的链接（如 <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">/api/unpkg/vue@3/dist/vue.global.prod.js</code>）
+            会先由 unpkg 302 到具体版本，该重定向会被改写回本代理，解析后仍然走加速通道。
+          </span>
+        </div>
+
+        <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+          <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+            <span class="text-sm font-medium text-on-surface">HTML 中引用</span>
+            <button aria-label="复制代码" class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors">
+              <span class="icon-[material-symbols--content-copy] text-lg"></span>
+            </button>
+          </div>
+          <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+            <span class="text-on-surface-variant opacity-70"># 原始链接</span><br>
+            &lt;script src="<span class="text-tertiary">https://unpkg.com/vue@3/dist/vue.global.prod.js</span>"&gt;<br><br>
+            <span class="text-on-surface-variant opacity-70"># 加速链接</span><br>
+            &lt;script src="<span class="text-tertiary">{Astro.url.origin}/api/unpkg/vue@3/dist/vue.global.prod.js</span>"&gt;
+          </div>
+        </div>
+      </div>
+
+      <!-- Maven -->
+      <div id="pkg-maven" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6 mb-6">
+        <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
+          <span class="icon-[simple-icons--apachemaven] text-primary text-2xl"></span>
+          Maven 加速
+        </h2>
+
+        <div class="bg-primary-container text-on-primary-container rounded-2xl px-5 py-4 mb-5 flex gap-3 text-sm">
+          <span class="icon-[material-symbols--info] text-xl shrink-0"></span>
+          <span>
+            <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">/api/maven/</code>
+            透传 repo1.maven.org（Maven Central），
+            <code class="font-mono bg-black/10 px-1.5 py-0.5 rounded">/api/gmaven/</code>
+            透传 dl.google.com（Android 的 Google Maven）。构件按路径直接取，无需改写响应内容。
+          </span>
+        </div>
+
+        <div class="bg-surface rounded-2xl overflow-hidden border border-outline-variant">
+          <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
+            <span class="text-sm font-medium text-on-surface">配置仓库地址</span>
+            <button aria-label="复制代码" class="copy-btn w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors">
+              <span class="icon-[material-symbols--content-copy] text-lg"></span>
+            </button>
+          </div>
+          <div class="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+            <span class="text-on-surface-variant opacity-70"># Gradle（settings.gradle 的 repositories）</span><br>
+            <span class="text-primary font-semibold">repositories</span> {`{`}<br>
+            {`    maven { url '`}<span class="text-tertiary">{Astro.url.origin}/api/maven/maven2</span>{`' }`}<br>
+            {`    maven { url '`}<span class="text-tertiary">{Astro.url.origin}/api/gmaven/android/maven2</span>{`' }`}<br>
+            {`}`}<br><br>
+            <span class="text-on-surface-variant opacity-70"># Maven（settings.xml 的 mirrors）</span><br>
+            &lt;mirror&gt;<br>
+            {`  <id>proxy-central</id>`}<br>
+            {`  <mirrorOf>central</mirrorOf>`}<br>
+            {`  <url>`}<span class="text-tertiary">{Astro.url.origin}/api/maven/maven2</span>{`</url>`}<br>
+            &lt;/mirror&gt;<br><br>
+            <span class="text-on-surface-variant opacity-70"># 验证（应输出 pom 内容）</span><br>
+            <span class="text-primary font-semibold">curl</span> <span class="text-tertiary">{Astro.url.origin}/api/maven/maven2/junit/junit/4.13.2/junit-4.13.2.pom</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 支持的端点 -->
+      <div id="pkg-endpoints" class="toc-section scroll-mt-24 bg-surface-container-highest rounded-3xl p-6">
+        <h2 class="text-xl font-medium text-on-surface mb-4">支持的端点</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/npm/</code>
+            <span class="text-on-surface-variant text-sm">registry.npmjs.org（官方源，tarball URL 已重写）</span>
+          </div>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/pypi/</code>
+            <span class="text-on-surface-variant text-sm">pypi.org（官方源，索引下载地址已重写）</span>
+          </div>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/pyf/</code>
+            <span class="text-on-surface-variant text-sm">files.pythonhosted.org（wheel/sdist 下载）</span>
+          </div>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/goproxy/</code>
+            <span class="text-on-surface-variant text-sm">proxy.golang.org（含 sumdb 转发）</span>
+          </div>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/jsd/</code>
+            <span class="text-on-surface-variant text-sm">cdn.jsdelivr.net（npm/gh 资源）</span>
+          </div>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/unpkg/</code>
+            <span class="text-on-surface-variant text-sm">unpkg.com（npm 前端资源）</span>
+          </div>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/maven/</code>
+            <span class="text-on-surface-variant text-sm">repo1.maven.org（Maven Central）</span>
+          </div>
+          <div class="bg-surface-container rounded-2xl px-4 py-3.5 flex items-center gap-3">
+            <code class="font-mono text-sm font-semibold text-primary bg-primary-container px-2.5 py-1 rounded-lg min-w-[110px] text-center">/api/gmaven/</code>
+            <span class="text-on-surface-variant text-sm">dl.google.com（Google Maven）</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // 侧边目录：条目由页面上的服务卡片自动生成，新增卡片无需维护目录列表
+  const sections = Array.from(document.querySelectorAll<HTMLElement>('.toc-section')).filter((el) => !!el.id);
+  const items = sections.map((sec) => ({
+    id: sec.id,
+    label: (sec.querySelector('h2')?.textContent || sec.id).trim(),
+  }));
+
+  // 桌面目录不用卡片底色，靠左侧竖线标示层级；移动端仍是横向胶囊
+  // 不加 transition-colors：高亮要跟住滚动，150ms 渐变会被感知成延迟
+  const TOC_ITEM = 'block border-l-2 border-outline-variant px-5 py-2.5 text-[15px] text-on-surface-variant hover:text-primary';
+  const TOC_CHIP = 'shrink-0 whitespace-nowrap rounded-full border border-outline-variant px-3.5 py-2 text-sm font-medium text-on-surface-variant hover:border-primary hover:text-primary';
+
+  function tocLink(item: { id: string; label: string }, baseClass: string) {
+    const link = document.createElement('a');
+    link.href = '#' + item.id;
+    link.className = baseClass;
+    link.dataset.toc = item.id;
+    link.textContent = item.label;
+    return link;
+  }
+
+  const tocNav = document.getElementById('packages-toc');
+  const tocChips = document.getElementById('packages-toc-chips');
+  items.forEach((item) => {
+    tocNav?.appendChild(tocLink(item, TOC_ITEM));
+    tocChips?.appendChild(tocLink(item, TOC_CHIP));
+  });
+
+  // 滚动时高亮当前卡片，偏移量与卡片上的 scroll-mt-24 一致，避开吸顶导航栏
+  const HEAD_OFFSET = 96;
+  // 锚点跳转后的实际位置有亚像素误差，留 1px 容差否则正好停在偏移线上的卡片不算到达
+  const SNAP_TOLERANCE = 1;
+  // 点击目录是平滑滚动，要跑几百毫秒，期间高亮钉在目标上，否则会一路闪过中间分区再落回
+  let pinnedId = '';
+  function markActive() {
+    let currentId = items[0]?.id;
+    sections.forEach((sec) => {
+      if (sec.getBoundingClientRect().top - HEAD_OFFSET <= SNAP_TOLERANCE) currentId = sec.id;
+    });
+    // 末段卡片不足一屏时永远到不了偏移线，触底直接算它
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
+      currentId = sections[sections.length - 1]?.id;
+    }
+    if (pinnedId) currentId = pinnedId;
+    document.querySelectorAll<HTMLAnchorElement>('[data-toc]').forEach((el) => {
+      const active = el.dataset.toc === currentId;
+      el.classList.toggle('border-primary', active);
+      el.classList.toggle('text-primary', active);
+      el.classList.toggle('font-medium', active);
+      if (active) el.setAttribute('aria-current', 'true');
+      else el.removeAttribute('aria-current');
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    const link = (e.target as Element | null)?.closest?.('[data-toc]') as HTMLAnchorElement | null;
+    if (!link?.dataset.toc) return;
+    pinnedId = link.dataset.toc;
+    markActive();
+    window.setTimeout(() => {
+      if (pinnedId !== link.dataset.toc) return;
+      pinnedId = '';
+      markActive();
+    }, 600);
+  });
+
+  window.addEventListener('scroll', markActive, { passive: true });
+  window.addEventListener('resize', markActive);
+  // 入场动画期间 rect 带着 translateY 偏移，动画收尾后再判一次当前分区
+  document.querySelector('.page-enter')?.addEventListener('animationend', markActive);
+  markActive();
+
+  // 复制功能
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const codeBlock = btn.closest('.bg-surface')?.querySelector('.font-mono');
+      if (codeBlock) {
+        navigator.clipboard.writeText(codeBlock.textContent || '');
+        btn.innerHTML = '<span class="icon-[material-symbols--check] text-lg"></span>';
+        setTimeout(() => {
+          btn.innerHTML = '<span class="icon-[material-symbols--content-copy] text-lg"></span>';
+        }, 2000);
+      }
+    });
+  });
+</script>

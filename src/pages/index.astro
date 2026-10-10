@@ -1,26 +1,36 @@
 ---
-// 首页 - URL 转换器
+// 首页 - URL 转换器（品牌标识以水印形式融入转换器卡片背景）
 import Layout from '../layouts/Layout.astro';
+import BrandMark from '../components/BrandMark.astro';
 import UrlConverter from '../components/UrlConverter.astro';
 ---
 
-<Layout title="加速访问" activeNav="/">
+<Layout
+  title="加速访问"
+  description="粘贴 GitHub、Docker、npm、Go、jsDelivr、unpkg、Maven、PyPI 链接，一键生成走 Deno Deploy 边缘节点的加速地址。"
+  activeNav="/"
+>
   <!-- 页面标题 -->
   <div class="mb-6">
     <h1 class="text-3xl font-medium text-on-surface mb-2">加速访问</h1>
-    <p class="text-on-surface-variant">粘贴 GitHub 链接或 Docker 镜像名，自动生成加速链接</p>
+    <p class="text-on-surface-variant">粘贴 GitHub / Docker / npm / Go / jsDelivr / unpkg / Maven / PyPI 链接，自动生成加速链接</p>
   </div>
 
   <!-- URL 转换器 -->
-  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
+  <!-- 毛玻璃的 backdrop-filter 会生成独立层叠上下文,z-10 让下拉菜单不被下方卡片盖住(仍低于 header 的 z-50) -->
+  <div class="relative z-10 bg-surface-container-highest rounded-3xl p-6 mb-6">
+    <!-- 标识水印单独裁切:卡片本身不能加 overflow-hidden,否则会剪掉转换器的下拉菜单 -->
+    <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
+      <BrandMark size={260} label="" class="absolute -right-12 -top-14 text-primary opacity-[0.07]" />
+    </div>
     <UrlConverter />
   </div>
 
   <!-- 使用说明 -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     <div class="bg-surface-container rounded-2xl p-5">
       <div class="flex items-center gap-3 mb-3">
-        <span class="material-symbols-outlined text-primary">download</span>
+        <span class="icon-[simple-icons--github] text-primary"></span>
         <h3 class="font-medium text-on-surface">GitHub 加速</h3>
       </div>
       <p class="text-sm text-on-surface-variant mb-3">
@@ -28,21 +38,35 @@ import UrlConverter from '../components/UrlConverter.astro';
       </p>
       <a href="/github" class="text-primary text-sm hover:underline inline-flex items-center gap-1">
         查看详情
-        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+        <span class="icon-[material-symbols--arrow-forward] text-sm"></span>
       </a>
     </div>
 
     <div class="bg-surface-container rounded-2xl p-5">
       <div class="flex items-center gap-3 mb-3">
-        <span class="material-symbols-outlined text-primary">layers</span>
+        <span class="icon-[simple-icons--docker] text-primary"></span>
         <h3 class="font-medium text-on-surface">Docker 加速</h3>
       </div>
       <p class="text-sm text-on-surface-variant mb-3">
-        支持 Docker Hub、GHCR、GCR、Quay 等镜像仓库的加速拉取。
+        支持 Docker Hub、GHCR、GCR、Quay、MCR 等镜像仓库的加速拉取。
       </p>
       <a href="/docker" class="text-primary text-sm hover:underline inline-flex items-center gap-1">
         查看详情
-        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+        <span class="icon-[material-symbols--arrow-forward] text-sm"></span>
+      </a>
+    </div>
+
+    <div class="bg-surface-container rounded-2xl p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="icon-[material-symbols--inventory-2] text-primary"></span>
+        <h3 class="font-medium text-on-surface">Packages 加速</h3>
+      </div>
+      <p class="text-sm text-on-surface-variant mb-3">
+        支持 npm 官方源、Go Modules 代理、jsDelivr / unpkg 资源 CDN、Maven 与 PyPI 仓库的加速访问。
+      </p>
+      <a href="/packages" class="text-primary text-sm hover:underline inline-flex items-center gap-1">
+        查看详情
+        <span class="icon-[material-symbols--arrow-forward] text-sm"></span>
       </a>
     </div>
   </div>

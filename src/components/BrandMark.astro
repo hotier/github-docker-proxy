@@ -1,0 +1,32 @@
+---
+// 品牌标识「迅源」：加速箭头穿出开口轨道，寓意把源站路径改写到离用户最近的一侧。
+// 单色 currentColor，亮暗主题与任意底色通用；轨道开口朝向箭头出口，16px 下仍可辨。
+interface Props {
+  size?: number;
+  class?: string;
+  label?: string;
+}
+
+const { size = 28, class: className = '', label = '迅源 SwiftOrigin' } = Astro.props;
+// label 传空串即视为装饰性图形，不进无障碍树
+const decorative = label === '';
+---
+
+<svg
+  viewBox="0 0 128 128"
+  width={size}
+  height={size}
+  class={className}
+  role={decorative ? undefined : 'img'}
+  aria-label={decorative ? undefined : label}
+  aria-hidden={decorative ? 'true' : undefined}
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  style="flex-shrink: 0"
+>
+  <g transform="translate(-6 4)">
+    <path d="M90.87 90.87A38 38 0 1 1 54.17 27.3" stroke="currentColor" stroke-width="15" stroke-linecap="round" fill="none" opacity=".5" />
+    <path d="M40 82L88 54" stroke="currentColor" stroke-width="18" stroke-linecap="round" fill="none" />
+    <path d="M114 40L100.3 68.4L82.5 37.2Z" fill="currentColor" />
+  </g>
+</svg>

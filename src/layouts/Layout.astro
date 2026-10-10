@@ -1,22 +1,24 @@
 ---
-// 基础布局组件 - 包含导航栏
-import GitHubIcon from '../components/icons/GitHubIcon.astro';
-import DockerIcon from '../components/icons/DockerIcon.astro';
+// 基础布局组件 - 品牌元信息、导航栏与页脚
+import BrandMark from '../components/BrandMark.astro';
+import { BRAND, THEME_COLOR } from '../lib/brand';
 
 export interface Props {
   title: string;
+  description?: string;
   activeNav?: string;
 }
 
-const { title, activeNav = '' } = Astro.props;
+const { title, description = BRAND.description, activeNav = '' } = Astro.props;
 const currentPath = Astro.url.pathname;
 
-// 导航项配置
+// 导航项配置（Iconify 类名需完整出现在源码中供 Tailwind 扫描）
 const navItems = [
-  { path: '/', label: '加速访问', icon: 'speed', type: 'material' },
-  { path: '/github', label: 'GitHub', icon: '', type: 'github' },
-  { path: '/docker', label: 'Docker', icon: '', type: 'docker' },
-  { path: '/status', label: '状态', icon: 'monitoring', type: 'material' },
+  { path: '/', label: '加速访问', iconClass: 'icon-[material-symbols--speed]' },
+  { path: '/github', label: 'GitHub', iconClass: 'icon-[simple-icons--github]' },
+  { path: '/docker', label: 'Docker', iconClass: 'icon-[simple-icons--docker]' },
+  { path: '/packages', label: 'Packages', iconClass: 'icon-[material-symbols--inventory-2]' },
+  { path: '/status', label: '状态', iconClass: 'icon-[material-symbols--monitoring]' },
 ];
 
 // 判断当前激活的导航项
@@ -24,36 +26,78 @@ const isActive = (path: string) => {
   if (path === '/') return currentPath === '/';
   return currentPath.startsWith(path);
 };
+
+// SSR 下按请求域名生成绝对地址，分享爬虫需要绝对 URL
+const fullTitle = `${title} · ${BRAND.name}`;
+const canonical = new URL(currentPath, Astro.url.origin).href;
+const ogImage = new URL('/og-image.jpg', Astro.url.origin).href;
 ---
 
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="GitHub & Docker 资源加速代理 - 基于 Deno Deploy 的免费边缘网络">
-  <title>{title} - GitHub & Docker Proxy</title>
+  <meta name="description" content={description}>
+  <meta name="author" content={BRAND.name}>
+  <title>{fullTitle}</title>
+  <link rel="canonical" href={canonical}>
+  <meta name="theme-color" content={THEME_COLOR.light}>
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- 社交分享卡片 -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content={BRAND.name}>
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:title" content={fullTitle}>
+  <meta property="og:description" content={description}>
+  <meta property="og:url" content={canonical}>
+  <meta property="og:image" content={ogImage}>
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content={BRAND.tagline}>
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content={fullTitle}>
+  <meta name="twitter:description" content={description}>
+  <meta name="twitter:image" content={ogImage}>
   
-  <!-- Material Design 3 Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <!-- 主题预应用:渲染前设置 class,避免暗色用户刷新白屏闪烁;地址栏配色同步 -->
+  <!-- data-theme 记录用户偏好,主题图标由 CSS 按它挑选,省掉首屏后 JS 改类名造成的图标闪跳 -->
+  <script is:inline define:vars={{ themeLight: THEME_COLOR.light, themeDark: THEME_COLOR.dark }}>
+    (function () {
+      try {
+        var t = localStorage.getItem('theme') || 'system';
+        var d = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.classList.toggle('light', t === 'light');
+        document.documentElement.dataset.theme = t;
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute('content', d ? themeDark : themeLight);
+      } catch (e) {}
+    })();
+  </script>
+  
+  <!-- 字体:使用本地字体栈(--font-roboto),不引入外部字体,避免加载后文字回流抖动 -->
   
   <!-- Tailwind CSS -->
   <link rel="stylesheet" href="/src/styles/global.css">
 </head>
-<body class="bg-surface text-on-surface font-roboto">
+<body class="text-on-surface font-roboto">
   <div class="min-h-screen flex flex-col">
     <!-- 顶部导航栏 -->
     <header class="bg-surface-container-highest border-b border-outline-variant sticky top-0 z-50">
       <div class="container mx-auto max-w-6xl px-4">
         <div class="flex items-center h-16 gap-4">
-          <!-- Logo -->
-          <a href="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity mr-auto">
-            <span class="material-symbols-outlined text-primary text-3xl">rocket_launch</span>
-            <span class="text-xl font-medium text-on-surface hidden sm:inline">GitHub & Docker Proxy</span>
+          {/* Logo：品牌标识 + 中文简称 + 拉丁字标 */}
+          <a href="/" class="flex items-center gap-2.5 hover:opacity-80 transition-opacity mr-auto" aria-label={`${BRAND.name} 首页`}>
+            <BrandMark size={30} class="text-primary" />
+            <span class="hidden sm:flex flex-col leading-none">
+              <span class="text-lg font-semibold text-on-surface">{BRAND.short}</span>
+              <span class="text-[10px] tracking-[0.2em] text-on-surface-variant mt-1">{BRAND.wordmark}</span>
+            </span>
           </a>
           
           <!-- 桌面导航 -->
@@ -65,18 +109,10 @@ const isActive = (path: string) => {
                   'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors',
                   isActive(item.path)
                     ? 'bg-primary text-on-primary'
-                    : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                    : 'text-on-surface-variant hover:bg-primary/15 hover:text-primary'
                 ]}
               >
-                {item.type === 'material' && (
-                  <span class="material-symbols-outlined text-lg">{item.icon}</span>
-                )}
-                {item.type === 'github' && (
-                  <GitHubIcon size={20} class={isActive(item.path) ? 'text-on-primary' : 'text-current'} />
-                )}
-                {item.type === 'docker' && (
-                  <DockerIcon size={20} class={isActive(item.path) ? 'text-on-primary' : 'text-current'} />
-                )}
+                <span class:list={[item.iconClass, 'text-lg']}></span>
                 {item.label}
               </a>
             ))}
@@ -86,35 +122,29 @@ const isActive = (path: string) => {
           <div class="relative">
             <button 
               id="theme-toggle-btn"
-              class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-primary/15 hover:text-primary transition-colors"
+              aria-label="切换主题"
+              aria-haspopup="menu"
+              aria-expanded="false"
               title="切换主题"
             >
-              <span class="material-symbols-outlined" id="theme-icon">dark_mode</span>
+              <span id="theme-icon" aria-hidden="true">
+                <span class="theme-glyph theme-glyph-light icon-[material-symbols--light-mode]"></span>
+                <span class="theme-glyph theme-glyph-dark icon-[material-symbols--dark-mode]"></span>
+                <span class="theme-glyph theme-glyph-system icon-[material-symbols--computer]"></span>
+              </span>
             </button>
-            
-            <!-- 主题选择下拉菜单 -->
-            <div id="theme-menu" class="hidden absolute right-0 mt-2 bg-surface-container-highest rounded-2xl shadow-lg border border-outline-variant py-2 z-50 whitespace-nowrap">
-              <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container-high transition-colors" data-theme="light">
-                <span class="material-symbols-outlined text-lg">light_mode</span>
-                <span>亮色模式</span>
-              </button>
-              <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container-high transition-colors" data-theme="dark">
-                <span class="material-symbols-outlined text-lg">dark_mode</span>
-                <span>暗色模式</span>
-              </button>
-              <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container-high transition-colors" data-theme="system">
-                <span class="material-symbols-outlined text-lg">settings_suggest</span>
-                <span>跟随系统</span>
-              </button>
-            </div>
           </div>
 
           <!-- 移动端菜单按钮 -->
           <button 
             id="mobile-menu-btn"
-            class="md:hidden w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high"
+            class="md:hidden w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-primary/15 hover:text-primary transition-colors"
+            aria-label="打开菜单"
+            aria-expanded="false"
+            aria-controls="mobile-menu"
           >
-            <span class="material-symbols-outlined">menu</span>
+            <span class="icon-[material-symbols--menu] text-2xl"></span>
           </button>
         </div>
       </div>
@@ -129,18 +159,10 @@ const isActive = (path: string) => {
                 'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors mb-1',
                 isActive(item.path)
                   ? 'bg-primary text-on-primary'
-                  : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                  : 'text-on-surface-variant hover:bg-primary/15 hover:text-primary'
               ]}
             >
-              {item.type === 'material' && (
-                <span class="material-symbols-outlined">{item.icon}</span>
-              )}
-              {item.type === 'github' && (
-                <GitHubIcon size={20} class={isActive(item.path) ? 'text-on-primary' : 'text-current'} />
-              )}
-              {item.type === 'docker' && (
-                <DockerIcon size={20} class={isActive(item.path) ? 'text-on-primary' : 'text-current'} />
-              )}
+              <span class:list={[item.iconClass, 'text-xl']}></span>
               {item.label}
             </a>
           ))}
@@ -148,26 +170,37 @@ const isActive = (path: string) => {
       </div>
     </header>
 
-    <!-- 主内容区 -->
+    <!-- 主题选择下拉菜单：放在 header 之外。header 自带 backdrop-filter，
+         菜单嵌在其内时磨砂只能取到导航条那一小条的合成快照，看着就是层奶白；
+         脱离该子树后取的是页面真实背景，与「直接链接」下拉同一种玻璃质感 -->
+    <div id="theme-menu" class="hidden fixed bg-surface-container-highest rounded-2xl overflow-hidden shadow-lg border border-outline-variant py-2 z-50 whitespace-nowrap">
+      <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-primary/15 hover:text-primary transition-colors" data-theme="light">
+        <span class="icon-[material-symbols--light-mode] text-lg"></span>
+        <span>亮色模式</span>
+      </button>
+      <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-primary/15 hover:text-primary transition-colors" data-theme="dark">
+        <span class="icon-[material-symbols--dark-mode] text-lg"></span>
+        <span>暗色模式</span>
+      </button>
+      <button class="theme-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-primary/15 hover:text-primary transition-colors" data-theme="system">
+        <span class="icon-[material-symbols--computer] text-lg"></span>
+        <span>跟随系统</span>
+      </button>
+    </div>
+
+    <!-- 主内容区：page-enter 让顶层内容块按序淡入，路由切换更连贯 -->
     <main class="flex-grow">
-      <div class="container mx-auto max-w-6xl px-4 py-6">
+      <div class="page-enter container mx-auto max-w-6xl px-4 py-6">
         <slot />
       </div>
     </main>
 
     <!-- 页脚 -->
     <footer class="border-t border-outline-variant mt-auto">
-      <div class="container mx-auto max-w-6xl px-4 py-6">
-        <div class="text-center text-on-surface-variant text-sm">
-          <p class="mb-2">
-            基于 <a href="https://deno.com/deploy" target="_blank" class="text-primary hover:underline">Deno Deploy</a> 构建
-          </p>
-          <div class="flex justify-center gap-2 flex-wrap">
-            <span class="px-2 py-1 bg-surface-container-high rounded text-xs">Astro</span>
-            <span class="px-2 py-1 bg-surface-container-high rounded text-xs">Tailwind CSS</span>
-            <span class="px-2 py-1 bg-surface-container-high rounded text-xs">Material Design 3</span>
-          </div>
-        </div>
+      <div class="container mx-auto max-w-6xl px-4 py-2.5">
+        <p class="text-center text-on-surface-variant text-sm">
+          {BRAND.name} · 基于 <a href="https://deno.com/deploy" target="_blank" class="text-primary hover:underline">Deno Deploy</a> 边缘网络
+        </p>
       </div>
     </footer>
   </div>
@@ -177,24 +210,31 @@ const isActive = (path: string) => {
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const mobileMenu = document.getElementById('mobile-menu');
     
+    function setMobileMenu(open) {
+      mobileMenu?.classList.toggle('hidden', !open);
+      mobileMenuBtn?.setAttribute('aria-expanded', String(open));
+      mobileMenuBtn?.setAttribute('aria-label', open ? '关闭菜单' : '打开菜单');
+    }
+    
     mobileMenuBtn?.addEventListener('click', () => {
-      mobileMenu?.classList.toggle('hidden');
+      setMobileMenu(mobileMenu?.classList.contains('hidden'));
     });
     
     // 点击菜单外部关闭
     document.addEventListener('click', (e) => {
       if (!mobileMenuBtn?.contains(e.target) && !mobileMenu?.contains(e.target)) {
-        mobileMenu?.classList.add('hidden');
+        setMobileMenu(false);
       }
     });
   </script>
 
   <!-- 主题切换脚本 -->
   <script>
+    import { THEME_COLOR } from '../lib/brand';
+
     // 主题管理
     const themeToggleBtn = document.getElementById('theme-toggle-btn');
     const themeMenu = document.getElementById('theme-menu');
-    const themeIcon = document.getElementById('theme-icon');
     const themeOptions = document.querySelectorAll('.theme-option');
     
     // 获取当前主题
@@ -205,34 +245,23 @@ const isActive = (path: string) => {
     // 应用主题
     function applyTheme(theme) {
       const html = document.documentElement;
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       
-      if (theme === 'system') {
-        // 跟随系统
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        html.classList.toggle('dark', prefersDark);
-        updateIcon(prefersDark ? 'dark' : 'light', true);
-      } else {
-        // 手动设置
-        html.classList.toggle('dark', theme === 'dark');
-        updateIcon(theme, false);
-      }
+      // 与 head 内联脚本保持一致:light 显式打标,system 交给媒体查询
+      const isDark = theme === 'dark' || (theme === 'system' && prefersDark);
+      html.classList.toggle('dark', isDark);
+      html.classList.toggle('light', theme === 'light');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? THEME_COLOR.dark : THEME_COLOR.light);
+      // 首屏图标已由 CSS 决定,这里只在偏好变更后同步属性
+      html.dataset.theme = theme;
       
       // 保存主题偏好
       localStorage.setItem('theme', theme);
       
-      // 更新按钮状态
+      // 更新选中状态
       themeOptions.forEach(option => {
-        option.classList.toggle('bg-primary-container', option.dataset.theme === theme);
+        option.classList.toggle('menu-active', option.dataset.theme === theme);
       });
-    }
-    
-    // 更新图标
-    function updateIcon(theme, isSystem) {
-      if (isSystem) {
-        themeIcon.textContent = 'settings_suggest';
-      } else {
-        themeIcon.textContent = theme === 'dark' ? 'dark_mode' : 'light_mode';
-      }
     }
     
     // 初始化主题
@@ -242,15 +271,34 @@ const isActive = (path: string) => {
     }
     
     // 切换菜单显示
+    // 菜单在视口层级定位（header 之外），每次展开时贴到按钮下方并与按钮右对齐
+    const MENU_EDGE_GAP = 8;
+    function positionThemeMenu() {
+      if (!themeMenu || !themeToggleBtn) return;
+      const anchor = themeToggleBtn.getBoundingClientRect();
+      const w = themeMenu.offsetWidth;
+      const left = Math.min(Math.max(MENU_EDGE_GAP, anchor.right - w), window.innerWidth - w - MENU_EDGE_GAP);
+      themeMenu.style.left = Math.round(left) + 'px';
+      themeMenu.style.top = Math.round(anchor.bottom + MENU_EDGE_GAP) + 'px';
+    }
+
+    function setThemeMenu(open) {
+      themeMenu?.classList.toggle('hidden', !open);
+      themeToggleBtn?.setAttribute('aria-expanded', String(open));
+      if (open) positionThemeMenu();
+    }
     themeToggleBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      themeMenu?.classList.toggle('hidden');
+      setThemeMenu(themeMenu?.classList.contains('hidden'));
+    });
+    window.addEventListener('resize', () => {
+      if (themeMenu && !themeMenu.classList.contains('hidden')) positionThemeMenu();
     });
     
     // 点击外部关闭菜单
     document.addEventListener('click', (e) => {
       if (!themeToggleBtn?.contains(e.target) && !themeMenu?.contains(e.target)) {
-        themeMenu?.classList.add('hidden');
+        setThemeMenu(false);
       }
     });
     
@@ -259,7 +307,7 @@ const isActive = (path: string) => {
       option.addEventListener('click', () => {
         const theme = option.dataset.theme;
         applyTheme(theme);
-        themeMenu?.classList.add('hidden');
+        setThemeMenu(false);
       });
     });
     
@@ -275,3 +323,16 @@ const isActive = (path: string) => {
   </script>
 </body>
 </html>
+
+<style>
+  /* 主题字形三选一:data-theme 由 head 的 pre-paint 脚本写入,首屏就是正确字形 */
+  :root .theme-glyph {
+    display: none;
+  }
+
+  :root[data-theme='light'] .theme-glyph-light,
+  :root[data-theme='dark'] .theme-glyph-dark,
+  :root[data-theme='system'] .theme-glyph-system {
+    display: inline-block;
+  }
+</style>

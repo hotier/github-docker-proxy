@@ -1,172 +1,138 @@
 ---
 // 状态和配置页面
 import Layout from '../layouts/Layout.astro';
-import GitHubIcon from '../components/icons/GitHubIcon.astro';
-import DockerIcon from '../components/icons/DockerIcon.astro';
+
+// 服务节点列表配置；图标类名必须是完整字面量（构建期图标引擎按源码扫描）
+const services = [
+  { key: 'github', icon: 'icon-[simple-icons--github]', name: 'GitHub 加速' },
+  { key: 'docker', icon: 'icon-[simple-icons--docker]', name: 'Docker 加速' },
+  { key: 'npm', icon: 'icon-[simple-icons--npm]', name: 'npm 加速' },
+  { key: 'go', icon: 'icon-[simple-icons--go]', name: 'Go 模块加速' },
+  { key: 'jsd', icon: 'icon-[simple-icons--jsdelivr]', name: 'jsDelivr 加速' },
+  { key: 'unpkg', icon: 'icon-[simple-icons--unpkg]', name: 'unpkg 加速' },
+  { key: 'maven', icon: 'icon-[simple-icons--apachemaven]', name: 'Maven 加速' },
+  { key: 'mcr', icon: 'icon-[simple-icons--microsoft]', name: 'MCR 镜像加速' },
+  { key: 'pypi', icon: 'icon-[simple-icons--pypi]', name: 'PyPI 加速' },
+];
 ---
 
-<Layout title="服务状态" activeNav="/status">
-  <!-- 页面标题 -->
-  <div class="mb-6">
-    <h1 class="text-3xl font-medium text-on-surface mb-2">服务状态</h1>
-    <p class="text-on-surface-variant">实时监控各节点状态和请求配额使用情况</p>
-  </div>
-
-  <!-- 节点状态卡片 -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="status-cards">
-    <!-- GitHub 加速状态 -->
-    <div class="bg-surface-container-highest rounded-3xl p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <GitHubIcon size={32} class="text-on-surface" />
-          <div>
-            <h3 class="font-medium text-on-surface">GitHub 加速</h3>
-            <p class="text-xs text-on-surface-variant">github.com 资源代理</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <span id="github-status-dot" class="w-3 h-3 rounded-full bg-gray-400 animate-pulse"></span>
-          <span id="github-status-text" class="text-sm text-on-surface-variant">检测中...</span>
-        </div>
-      </div>
-      
-      <!-- 响应时间 -->
-      <div class="mb-3">
-        <div class="flex justify-between text-sm mb-1">
-          <span class="text-on-surface-variant">响应时间</span>
-          <span id="github-response-time" class="text-on-surface font-mono">-</span>
-        </div>
-        <div class="w-full bg-surface-container rounded-full h-2">
-          <div id="github-response-bar" class="bg-primary h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-      </div>
-
-      <!-- 今日请求数 -->
-      <div class="flex items-center justify-between text-sm">
-        <span class="text-on-surface-variant">今日请求</span>
-        <span id="github-today-requests" class="text-on-surface font-mono">-</span>
-      </div>
+<Layout
+  title="服务状态"
+  description="迅源 SwiftOrigin 各加速节点的连通性探测与请求、流量、访客统计，按服务维度实时汇总。"
+  activeNav="/status"
+>
+  <!-- 页面标题：服务节点列表的刷新按钮放在页头右侧，不进表格 -->
+  <div class="flex items-start justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-3xl font-medium text-on-surface mb-2">服务状态</h1>
+      <p class="text-on-surface-variant">实时监控各节点状态和请求配额使用情况</p>
     </div>
-
-    <!-- Docker 加速状态 -->
-    <div class="bg-surface-container-highest rounded-3xl p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <DockerIcon size={32} class="text-on-surface" />
-          <div>
-            <h3 class="font-medium text-on-surface">Docker 加速</h3>
-            <p class="text-xs text-on-surface-variant">容器镜像仓库代理</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <span id="docker-status-dot" class="w-3 h-3 rounded-full bg-gray-400 animate-pulse"></span>
-          <span id="docker-status-text" class="text-sm text-on-surface-variant">检测中...</span>
-        </div>
-      </div>
-      
-      <!-- 响应时间 -->
-      <div class="mb-3">
-        <div class="flex justify-between text-sm mb-1">
-          <span class="text-on-surface-variant">响应时间</span>
-          <span id="docker-response-time" class="text-on-surface font-mono">-</span>
-        </div>
-        <div class="w-full bg-surface-container rounded-full h-2">
-          <div id="docker-response-bar" class="bg-primary h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-      </div>
-
-      <!-- 今日请求数 -->
-      <div class="flex items-center justify-between text-sm">
-        <span class="text-on-surface-variant">今日请求</span>
-        <span id="docker-today-requests" class="text-on-surface font-mono">-</span>
-      </div>
+    <div class="flex shrink-0 items-center gap-2 pt-2">
+      <span id="refreshed-at-services" class="text-xs text-on-surface-variant"></span>
+      <button id="refresh-btn-services" type="button" aria-label="刷新服务状态" title="刷新" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50 disabled:pointer-events-none">
+        <span id="refresh-icon-services" class="icon-[material-symbols--refresh] text-lg"></span>
+      </button>
     </div>
   </div>
 
-  <!-- 访问统计 -->
+  <!-- 服务节点列表：每服务一行，状态与请求/流量统计均为文本 -->
+  <div class="bg-surface-container-highest rounded-3xl p-6 mb-6" id="status-cards">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm min-w-[780px]">
+        <thead>
+          <tr class="text-left text-on-surface-variant border-b border-surface-variant">
+            <th class="py-3 pr-3 font-medium">服务</th>
+            <th class="py-3 px-3 font-medium">状态</th>
+            <th class="py-3 px-3 font-medium text-right">延迟</th>
+            <th class="py-3 px-3 font-medium text-right">今日请求</th>
+            <th class="py-3 px-3 font-medium text-right">今日流量</th>
+            <th class="py-3 px-3 font-medium text-right">累计请求</th>
+            <th class="py-3 pl-3 font-medium text-right">累计流量</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-surface-variant">
+          {services.map((svc) => (
+            <tr>
+              <td class="py-3.5 pr-3">
+                <div class="flex items-center gap-3">
+                  <span class:list={[svc.icon, 'text-xl text-on-surface']}></span>
+                  <div class="font-medium text-on-surface">{svc.name}</div>
+                </div>
+              </td>
+              <td class="py-3.5 px-3 whitespace-nowrap">
+                <span id={`${svc.key}-status-dot`} class="inline-block w-3 h-3 rounded-full bg-gray-400 animate-pulse"></span>
+                <span id={`${svc.key}-status-text`} class="ml-2 text-on-surface-variant">检测中...</span>
+              </td>
+              <td class="py-3.5 px-3 text-right font-mono text-on-surface-variant" id={`${svc.key}-response-time`}>-</td>
+              <td class="py-3.5 px-3 text-right font-mono text-on-surface" id={`${svc.key}-today-requests`}>-</td>
+              <td class="py-3.5 px-3 text-right font-mono text-primary" id={`${svc.key}-today-bytes`}>-</td>
+              <td class="py-3.5 px-3 text-right font-mono text-on-surface" id={`${svc.key}-total-requests`}>-</td>
+              <td class="py-3.5 pl-3 text-right font-mono text-primary" id={`${svc.key}-total-bytes`}>-</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 访问统计：刷新只作用于本卡片（主站访问 + 平台用量） -->
   <div class="bg-surface-container-highest rounded-3xl p-6 mb-6">
-    <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
-      <span class="material-symbols-outlined text-primary">analytics</span>
-      访问统计
-    </h2>
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <h2 class="text-xl font-medium text-on-surface flex items-center gap-3">
+        <span class="icon-[material-symbols--analytics] text-primary"></span>
+        访问统计
+      </h2>
+      <div class="flex items-center gap-2">
+        <span id="refreshed-at-stats" class="text-xs text-on-surface-variant"></span>
+        <button id="refresh-btn-stats" type="button" aria-label="刷新访问统计" title="刷新" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50 disabled:pointer-events-none">
+          <span id="refresh-icon-stats" class="icon-[material-symbols--refresh] text-lg"></span>
+        </button>
+      </div>
+    </div>
     
-    <!-- Deno Deploy 平台统计 -->
+    <!-- 主站访问统计 -->
     <div class="mb-6">
-      <h3 class="text-sm font-medium text-on-surface-variant mb-3">平台统计 (Deno Deploy)</h3>
+      <h3 class="text-sm font-medium text-on-surface-variant mb-3">主站访问</h3>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">今日请求数</div>
-          <div class="text-2xl font-medium text-on-surface" id="deno-requests">-</div>
+          <div class="text-xs text-on-surface-variant mb-1">今日浏览</div>
+          <div class="text-xl font-medium text-on-surface" id="today-page-views">-</div>
         </div>
         <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">今日 CPU 时间</div>
-          <div class="text-2xl font-medium text-primary" id="deno-cpu">-</div>
+          <div class="text-xs text-on-surface-variant mb-1">今日访客</div>
+          <div class="text-xl font-medium text-primary" id="today-visitors">-</div>
         </div>
         <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">今日入站流量</div>
-          <div class="text-2xl font-medium text-on-surface" id="deno-ingress">-</div>
+          <div class="text-xs text-on-surface-variant mb-1">累计浏览</div>
+          <div class="text-xl font-medium text-on-surface" id="total-page-views">-</div>
         </div>
         <div class="bg-surface rounded-2xl p-4">
-          <div class="text-sm text-on-surface-variant mb-1">今日出站流量</div>
-          <div class="text-2xl font-medium text-primary" id="deno-egress">-</div>
+          <div class="text-xs text-on-surface-variant mb-1">累计访客</div>
+          <div class="text-xl font-medium text-primary" id="total-visitors">-</div>
         </div>
       </div>
     </div>
 
-    <!-- 服务加速统计 -->
+    <!-- Deno Deploy 平台用量 -->
     <div>
-      <h3 class="text-sm font-medium text-on-surface-variant mb-3">服务加速</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- GitHub 加速 -->
+      <h3 class="text-sm font-medium text-on-surface-variant mb-3">平台用量</h3>
+      <div id="deno-analytics-note" class="hidden -mt-2 mb-3 text-xs text-on-surface-variant"></div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-surface rounded-2xl p-4">
-          <div class="flex items-center gap-2 mb-3">
-            <GitHubIcon size={20} class="text-on-surface" />
-            <span class="text-sm font-medium text-on-surface">GitHub 加速</span>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <div class="text-xs text-on-surface-variant mb-1">今日请求</div>
-              <div class="text-xl font-medium text-on-surface" id="today-github-requests">-</div>
-            </div>
-            <div>
-              <div class="text-xs text-on-surface-variant mb-1">今日流量</div>
-              <div class="text-xl font-medium text-primary" id="today-github-bytes">-</div>
-            </div>
-            <div>
-              <div class="text-xs text-on-surface-variant mb-1">累计请求</div>
-              <div class="text-xl font-medium text-on-surface" id="total-github-requests">-</div>
-            </div>
-            <div>
-              <div class="text-xs text-on-surface-variant mb-1">累计流量</div>
-              <div class="text-xl font-medium text-primary" id="total-github-bytes">-</div>
-            </div>
-          </div>
+          <div class="text-xs text-on-surface-variant mb-1">今日请求数</div>
+          <div class="text-xl font-medium text-on-surface" id="deno-requests">-</div>
         </div>
-
-        <!-- Docker 加速 -->
         <div class="bg-surface rounded-2xl p-4">
-          <div class="flex items-center gap-2 mb-3">
-            <DockerIcon size={20} class="text-on-surface" />
-            <span class="text-sm font-medium text-on-surface">Docker 加速</span>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <div class="text-xs text-on-surface-variant mb-1">今日请求</div>
-              <div class="text-xl font-medium text-on-surface" id="today-docker-requests">-</div>
-            </div>
-            <div>
-              <div class="text-xs text-on-surface-variant mb-1">今日流量</div>
-              <div class="text-xl font-medium text-primary" id="today-docker-bytes">-</div>
-            </div>
-            <div>
-              <div class="text-xs text-on-surface-variant mb-1">累计请求</div>
-              <div class="text-xl font-medium text-on-surface" id="total-docker-requests">-</div>
-            </div>
-            <div>
-              <div class="text-xs text-on-surface-variant mb-1">累计流量</div>
-              <div class="text-xl font-medium text-primary" id="total-docker-bytes">-</div>
-            </div>
-          </div>
+          <div class="text-xs text-on-surface-variant mb-1">今日 CPU 时间</div>
+          <div class="text-xl font-medium text-primary" id="deno-cpu">-</div>
+        </div>
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="text-xs text-on-surface-variant mb-1">今日入站流量</div>
+          <div class="text-xl font-medium text-on-surface" id="deno-ingress">-</div>
+        </div>
+        <div class="bg-surface rounded-2xl p-4">
+          <div class="text-xs text-on-surface-variant mb-1">今日出站流量</div>
+          <div class="text-xl font-medium text-primary" id="deno-egress">-</div>
         </div>
       </div>
     </div>
@@ -175,12 +141,12 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
   <!-- 高级配置 -->
   <div class="bg-surface-container-highest rounded-3xl p-6">
     <h2 class="text-xl font-medium text-on-surface mb-4 flex items-center gap-3">
-      <span class="material-symbols-outlined text-primary">settings</span>
+      <span class="icon-[material-symbols--settings] text-primary"></span>
       高级配置
     </h2>
 
     <div class="bg-error-container text-on-error-container rounded-2xl px-5 py-4 mb-5 flex gap-3 text-sm">
-      <span class="material-symbols-outlined text-xl shrink-0">warning</span>
+      <span class="icon-[material-symbols--warning] text-xl shrink-0"></span>
       <span>
         <strong>鉴权保护</strong>：如需防止滥用，可在 Deno Deploy Dashboard 中设置 
         <code class="font-mono bg-black/10 px-2 py-0.5 rounded">PROXY_PASSWORD</code> 
@@ -191,28 +157,28 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="bg-surface rounded-2xl p-4">
         <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary text-lg">key</span>
+          <span class="icon-[material-symbols--key] text-primary text-lg"></span>
           访问密码
         </h3>
         <code class="text-sm text-on-surface-variant font-mono">PROXY_PASSWORD</code>
       </div>
       <div class="bg-surface rounded-2xl p-4">
         <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary text-lg">list</span>
+          <span class="icon-[material-symbols--list] text-primary text-lg"></span>
           白名单
         </h3>
         <code class="text-sm text-on-surface-variant font-mono">WHITE_LIST=["owner/*"]</code>
       </div>
       <div class="bg-surface rounded-2xl p-4">
         <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary text-lg">block</span>
+          <span class="icon-[material-symbols--block] text-primary text-lg"></span>
           黑名单
         </h3>
         <code class="text-sm text-on-surface-variant font-mono">BLACK_LIST=["spam/repo"]</code>
       </div>
       <div class="bg-surface rounded-2xl p-4">
         <h3 class="font-medium text-on-surface mb-2 flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary text-lg">speed</span>
+          <span class="icon-[material-symbols--speed] text-primary text-lg"></span>
           速率限制
         </h3>
         <code class="text-sm text-on-surface-variant font-mono">RATE_LIMIT=100</code>
@@ -222,58 +188,104 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
 </Layout>
 
 <script>
-  // 检查 GitHub 节点状态
-  async function checkGitHubStatus() {
+  // 节点状态端点，github/docker 为静态路由，其余走 /api/status/[service]
+  // 需与上方 services 列表保持一致（新增服务后两处都要加）
+  const NODES = ['github', 'docker', 'npm', 'go', 'jsd', 'unpkg', 'maven', 'mcr', 'pypi'];
+
+  // 客户端缓存：页面加载只渲染未过期的数据，刷新页面不再触发全量请求
+  // 探测与统计 60 秒；平台统计是 15 分钟粒度指标，5 分钟已足够
+  // 服务端另有 src/lib/probe.ts 的探测/用量缓存，多个访客共享同一次出网
+  const CACHE_TTL = { node: 60000, stats: 60000, deno: 300000 };
+  const CACHE_KEY = 'status-cache:';
+
+  // 两张卡片各自一套刷新控件：按钮的忙态与"数据更新于"只影响本卡片
+  // services = 服务节点列表（状态/延迟 + 表内各服务请求流量）
+  // stats    = 访问统计（主站浏览访客 + Deno 平台用量）
+  const SCOPES = {
+    services: { busy: 0, btn: 'refresh-btn-services', icon: 'refresh-icon-services', at: 'refreshed-at-services' },
+    stats: { busy: 0, btn: 'refresh-btn-stats', icon: 'refresh-icon-stats', at: 'refreshed-at-stats' },
+  };
+  type Scope = keyof typeof SCOPES | 'all';
+
+  function readCache(key, ttl) {
     try {
-      const response = await fetch('/api/status/github');
-      const data = await response.json();
-      updateStatusUI('github', data.status === 'ok', data.responseTime || 0);
-    } catch (error) {
-      updateStatusUI('github', false, 0);
+      const raw = localStorage.getItem(CACHE_KEY + key);
+      if (!raw) return null;
+      const entry = JSON.parse(raw);
+      return Date.now() - entry.ts < ttl ? entry : null;
+    } catch {
+      return null;
     }
   }
 
-  // 检查 Docker 节点状态
-  async function checkDockerStatus() {
+  function writeCache(key, data) {
     try {
-      const response = await fetch('/api/status/docker');
-      const data = await response.json();
-      updateStatusUI('docker', data.status === 'ok', data.responseTime || 0);
-    } catch (error) {
-      updateStatusUI('docker', false, 0);
+      localStorage.setItem(CACHE_KEY + key, JSON.stringify({ ts: Date.now(), data }));
+    } catch {
+      // 隐私模式或配额满时退化为无缓存
     }
   }
 
-  // 更新状态 UI
-  function updateStatusUI(type, isOk, duration) {
+  function showRefreshedAt(scope: Scope, ts: number) {
+    const text = '数据更新于 ' + new Date(ts).toLocaleTimeString('zh-CN');
+    cardsOf(scope).forEach((card) => updateElement(card.at, text));
+  }
+
+  // 检查节点状态：在线 / 异常(上游返回错误码) / 离线(探测失败或上游无响应)
+  // force 跳过本地缓存；fresh 额外跳过服务端 30 秒缓存（只有手动刷新按钮值得付这个出网代价）
+  async function checkNodeStatus(type, force, fresh) {
+    if (!force) {
+      const cached = readCache('node:' + type, CACHE_TTL.node);
+      if (cached) {
+        updateStatusUI(type, cached.data.state, cached.data.duration);
+        return;
+      }
+    }
+    beginBusy('services');
+    try {
+      const response = await fetch('/api/status/' + type + (fresh ? '?force=1' : ''));
+      const data = await response.json();
+      const state = data.status === 'ok' ? 'online' : data.statusCode ? 'error' : 'offline';
+      const duration = state === 'offline' ? null : (data.responseTime || 0);
+      // 上游异常/离线同样缓存（就是这一次的探测结果）；探测端点自身取不到结果不缓存
+      writeCache('node:' + type, { state, duration });
+      updateStatusUI(type, state, duration);
+    } catch (error) {
+      updateStatusUI(type, 'offline', null);
+    } finally {
+      endBusy('services');
+    }
+  }
+
+  // 更新状态 UI（延迟为独立列，类名字符串需保留表格单元格的布局位）
+  const STATE_STYLES = {
+    online:  { dot: 'inline-block w-3 h-3 rounded-full align-middle bg-green-500', text: 'ml-2 text-sm text-green-600', label: '在线' },
+    error:   { dot: 'inline-block w-3 h-3 rounded-full align-middle bg-amber-500', text: 'ml-2 text-sm text-amber-600', label: '异常' },
+    offline: { dot: 'inline-block w-3 h-3 rounded-full align-middle bg-red-500', text: 'ml-2 text-sm text-red-600', label: '离线' },
+  };
+
+  function updateStatusUI(type, state, duration) {
     const dot = document.getElementById(type + '-status-dot');
     const text = document.getElementById(type + '-status-text');
     const timeEl = document.getElementById(type + '-response-time');
-    const bar = document.getElementById(type + '-response-bar');
+    const style = STATE_STYLES[state];
     
-    if (dot) {
-      dot.className = 'w-3 h-3 rounded-full ' + (isOk ? 'bg-green-500' : 'bg-red-500');
-    }
+    if (dot) dot.className = style.dot;
     
     if (text) {
-      text.textContent = isOk ? '正常' : '异常';
-      text.className = 'text-sm ' + (isOk ? 'text-green-600' : 'text-red-600');
+      text.textContent = style.label;
+      text.className = style.text;
     }
     
-    if (timeEl && isOk) {
-      timeEl.textContent = duration + 'ms';
-    }
-    
-    if (bar && isOk) {
-      const percent = Math.min((duration / 1000) * 100, 100);
-      bar.style.width = percent + '%';
-      
-      if (duration < 200) {
-        bar.className = 'bg-green-500 h-2 rounded-full transition-all duration-500';
-      } else if (duration < 500) {
-        bar.className = 'bg-yellow-500 h-2 rounded-full transition-all duration-500';
+    if (timeEl) {
+      // 完整类名字面量,保证 Tailwind 能扫描到
+      if (duration === null) {
+        timeEl.textContent = '—';
+        timeEl.className = 'py-3.5 px-3 text-right font-mono text-on-surface-variant';
       } else {
-        bar.className = 'bg-red-500 h-2 rounded-full transition-all duration-500';
+        timeEl.textContent = duration + 'ms';
+        const color = duration < 200 ? 'text-green-600' : duration < 500 ? 'text-yellow-600' : 'text-red-600';
+        timeEl.className = 'py-3.5 px-3 text-right font-mono ' + color;
       }
     }
   }
@@ -284,127 +296,228 @@ import DockerIcon from '../components/icons/DockerIcon.astro';
     if (el) el.textContent = text;
   }
 
-  // 获取访问统计
-  async function fetchStats() {
+  // 数值格式化
+  function formatNumber(n) {
+    return (n || 0).toLocaleString('zh-CN');
+  }
+  function formatBytes(b) {
+    if (!b) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    // 递增动画中途会出现不足 1 字节的小数，取下界否则 sizes 会索引到 undefined
+    const i = Math.max(0, Math.min(sizes.length - 1, Math.floor(Math.log(b) / Math.log(k))));
+    return parseFloat((b / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  const fmtInt = (n: number) => formatNumber(Math.round(n));
+
+  // 数字增长入场：首次渲染从 0 递增到终值，所有数字共用一个 rAF 循环
+  const TWEEN_MS = 850;
+  const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 入场只放一次：60 秒轮询与手动刷新直接写终值，避免读数每次跳动
+  const entered = { stats: false, deno: false };
+  const tweens: { el: HTMLElement; target: number; fmt: (n: number) => string; start: number }[] = [];
+  let tweenRunning = false;
+
+  function enterOnce(key: 'stats' | 'deno') {
+    if (entered[key]) return false;
+    entered[key] = true;
+    return true;
+  }
+
+  function pumpTweens(now: number) {
+    tweenRunning = false;
+    for (let i = tweens.length - 1; i >= 0; i--) {
+      const tw = tweens[i];
+      const p = Math.min(1, (now - tw.start) / TWEEN_MS);
+      // easeOutCubic：起步快、收尾不跳，最后一定落在格式化后的终值
+      tw.el.textContent = tw.fmt(tw.target * (1 - Math.pow(1 - p, 3)));
+      if (p >= 1) tweens.splice(i, 1);
+    }
+    if (tweens.length) {
+      tweenRunning = true;
+      requestAnimationFrame(pumpTweens);
+    }
+  }
+
+  function setMetric(id: string, value: number, fmt: (n: number) => string, animate: boolean) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // 减少动效偏好，以及后台标签页（rAF 不执行）都直接写终值，切回页面时不会停在 0
+    if (!animate || REDUCED_MOTION || document.hidden) {
+      el.textContent = fmt(value || 0);
+      return;
+    }
+    const stale = tweens.findIndex((tw) => tw.el === el);
+    if (stale >= 0) tweens.splice(stale, 1);
+    el.textContent = fmt(0);
+    tweens.push({ el, target: value || 0, fmt, start: performance.now() });
+    if (!tweenRunning) {
+      tweenRunning = true;
+      requestAnimationFrame(pumpTweens);
+    }
+  }
+
+  // 同一份 /api/stats 里含两张卡片的数据，按 scope 只渲染各自卡片内的部分
+  function applyStats(data: any, scope: Scope) {
+    const animate = enterOnce('stats');
+    const today = data.today || {};
+    const total = data.total || {};
+
+    if (scope !== 'services') {
+      // 主站访问
+      setMetric('today-page-views', today.pageViews, fmtInt, animate);
+      setMetric('today-visitors', today.visitors, fmtInt, animate);
+      setMetric('total-page-views', total.pageViews, fmtInt, animate);
+      setMetric('total-visitors', total.visitors, fmtInt, animate);
+    }
+
+    if (scope !== 'stats') {
+      // 各加速节点统计(表格内今日/累计请求与流量)
+      for (const svc of NODES) {
+        const t = today[svc] || {};
+        const c = total[svc] || {};
+        setMetric(svc + '-today-requests', t.requests, fmtInt, animate);
+        setMetric(svc + '-today-bytes', t.bytes, formatBytes, animate);
+        setMetric(svc + '-total-requests', c.requests, fmtInt, animate);
+        setMetric(svc + '-total-bytes', c.bytes, formatBytes, animate);
+      }
+    }
+  }
+
+  async function fetchStats(scope: Scope, force: boolean) {
+    if (!force) {
+      const cached = readCache('stats', CACHE_TTL.stats);
+      if (cached) {
+        applyStats(cached.data, scope);
+        showRefreshedAt(scope, cached.ts);
+        return;
+      }
+    }
+    beginBusy(scope);
     try {
       const response = await fetch('/api/stats');
       const data = await response.json();
-      
-      // 主站访问统计
-      updateElement('today-main-visits', data.formatted?.todayMainVisits || '0');
-      updateElement('today-main-visitors', data.formatted?.todayMainVisitors || '0');
-      updateElement('total-main-visits', data.formatted?.totalMainVisits || '0');
-      updateElement('total-main-visitors', data.formatted?.totalMainVisitors || '0');
-      
-      // GitHub 加速统计
-      updateElement('today-github-requests', data.formatted?.todayGithubRequests || '0');
-      updateElement('today-github-bytes', data.formatted?.todayGithubBytes || '0 B');
-      updateElement('total-github-requests', data.formatted?.totalGithubRequests || '0');
-      updateElement('total-github-bytes', data.formatted?.totalGithubBytes || '0 B');
-      
-      // Docker 加速统计
-      updateElement('today-docker-requests', data.formatted?.todayDockerRequests || '0');
-      updateElement('today-docker-bytes', data.formatted?.todayDockerBytes || '0 B');
-      updateElement('total-docker-requests', data.formatted?.totalDockerRequests || '0');
-      updateElement('total-docker-bytes', data.formatted?.totalDockerBytes || '0 B');
-      
-      // 更新节点卡片中的今日请求
-      const githubTodayReq = data.today?.githubRequests || 0;
-      const dockerTodayReq = data.today?.dockerRequests || 0;
-      updateElement('github-today-requests-card', githubTodayReq.toLocaleString());
-      updateElement('docker-today-requests-card', dockerTodayReq.toLocaleString());
+      writeCache('stats', data);
+      applyStats(data, scope);
+      showRefreshedAt(scope, Date.now());
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+    } finally {
+      endBusy(scope);
     }
-  }
-
-  // 格式化字节数
-  function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  // 渲染周统计图表
-  function renderWeeklyChart(weeklyData) {
-    const chartContainer = document.getElementById('weekly-chart');
-    const labelsContainer = document.getElementById('weekly-labels');
-    const weeklySection = document.getElementById('weekly-stats');
-    
-    if (!chartContainer || !labelsContainer) return;
-    if (weeklySection) weeklySection.classList.remove('hidden');
-    
-    const maxRequests = Math.max(...weeklyData.map(d => d.requests), 1);
-    
-    chartContainer.innerHTML = weeklyData.map(day => {
-      const height = (day.requests / maxRequests) * 100;
-      return '<div class="flex flex-col items-center flex-1 group relative">' +
-        '<div class="w-full bg-primary-container rounded-t-lg transition-all hover:bg-primary" ' +
-        'style="height: ' + Math.max(height, 2) + '%" ' +
-        'title="' + day.requests + ' 请求"></div></div>';
-    }).join('');
-    
-    labelsContainer.innerHTML = weeklyData.map(day => {
-      const date = new Date(day.date);
-      const dayLabel = (date.getMonth() + 1) + '/' + date.getDate();
-      return '<span class="flex-1 text-center">' + dayLabel + '</span>';
-    }).join('');
   }
 
   // 获取 Deno Deploy Analytics
-  async function fetchDenoAnalytics() {
-    try {
-      const response = await fetch('/api/deno-analytics');
-      const data = await response.json();
-      
-      if (data.success) {
-        updateElement('deno-requests', data.today.requests.toLocaleString());
-        updateElement('deno-cpu', data.today.cpuTime + 's');
+  // 今日流量优先用原始字节数本地格式化，才能跟着一起递增；旧缓存没有该字段时退回服务端字符串
+  function applyDenoAnalytics(data) {
+    const note = document.getElementById('deno-analytics-note');
+
+    if (data.success) {
+      const animate = enterOnce('deno');
+      note?.classList.add('hidden');
+      setMetric('deno-requests', data.today.requests, fmtInt, animate);
+      setMetric('deno-cpu', data.today.cpuTime, (n: number) => Math.round(n * 100) / 100 + 's', animate);
+      if (typeof data.today.ingressBytes === 'number') {
+        setMetric('deno-ingress', data.today.ingressBytes, formatBytes, animate);
+      } else {
         updateElement('deno-ingress', data.today.ingressFormatted);
+      }
+      if (typeof data.today.egressBytes === 'number') {
+        setMetric('deno-egress', data.today.egressBytes, formatBytes, animate);
+      } else {
         updateElement('deno-egress', data.today.egressFormatted);
       }
-    } catch (error) {
-      console.error('Failed to fetch Deno analytics:', error);
+    } else {
+      if (note) {
+        note.textContent = data.error === 'DENO_API_TOKEN is not configured'
+          ? '未配置 DENO_API_TOKEN 环境变量，平台用量数据不可用'
+          : '平台用量数据获取失败：' + (data.error || '未知错误');
+        note.classList.remove('hidden');
+      }
     }
   }
 
-  
-  // 刷新所有数据
-  function refreshAll() {
-    checkGitHubStatus();
-    checkDockerStatus();
-    fetchStats();
-    fetchDenoAnalytics();
-    
+  async function fetchDenoAnalytics(force, fresh) {
+    if (!force) {
+      const cached = readCache('deno', CACHE_TTL.deno);
+      if (cached) {
+        applyDenoAnalytics(cached.data);
+        showRefreshedAt('stats', cached.ts);
+        return;
+      }
+    }
+    beginBusy('stats');
+    try {
+      const response = await fetch('/api/deno-analytics' + (fresh ? '?force=1' : ''));
+      const data = await response.json();
+      writeCache('deno', data);
+      applyDenoAnalytics(data);
+      showRefreshedAt('stats', Date.now());
+    } catch (error) {
+      console.error('Failed to fetch Deno analytics:', error);
+      const note = document.getElementById('deno-analytics-note');
+      if (note) {
+        note.textContent = '平台用量数据获取失败';
+        note.classList.remove('hidden');
+      }
+    } finally {
+      endBusy('stats');
+    }
   }
 
-  // 刷新按钮
-  document.getElementById('refresh-metrics')?.addEventListener('click', refreshAll);
+  // 刷新按钮忙态：本卡片任一请求在途即禁用并让图标旋转，全部落地后恢复
+  // scope 为 all 表示这一次取数同时喂两张卡片（页面加载与到期轮询）
+  function cardsOf(scope: Scope) {
+    return scope === 'all' ? Object.values(SCOPES) : [SCOPES[scope]];
+  }
 
-  // 初始加载
-  refreshAll();
-  
-  // 分频率自动刷新
-  // 节点状态：30 秒（需要实时监控）
-  setInterval(() => {
-    checkGitHubStatus();
-    checkDockerStatus();
-  }, 30000);
-  
-  // 访问统计：60 秒（变化不频繁）
-  setInterval(() => {
-    fetchStats();
-  }, 60000);
-  
-  // 平台统计：5 分钟（Deno Analytics 15 分钟粒度）
-  setInterval(() => {
-    fetchDenoAnalytics();
-  }, 300000);
-  
-  // 内存指标：30 秒（需要实时监控）
-  setInterval(() => {
-    
-  }, 30000);
+  function beginBusy(scope: Scope) {
+    cardsOf(scope).forEach((card) => {
+      card.busy++;
+      const btn = document.getElementById(card.btn) as HTMLButtonElement | null;
+      if (btn) btn.disabled = true;
+      document.getElementById(card.icon)?.classList.add('animate-spin');
+    });
+  }
+
+  function endBusy(scope: Scope) {
+    cardsOf(scope).forEach((card) => {
+      card.busy--;
+      if (card.busy > 0) return;
+      card.busy = 0;
+      const btn = document.getElementById(card.btn) as HTMLButtonElement | null;
+      if (btn) btn.disabled = false;
+      document.getElementById(card.icon)?.classList.remove('animate-spin');
+    });
+  }
+
+  // 服务节点列表卡片：上游探测 + 表内各服务的请求/流量
+  function refreshServices(force: boolean, fresh: boolean) {
+    NODES.forEach((svc) => checkNodeStatus(svc, force, fresh));
+    fetchStats('services', force);
+  }
+
+  // 访问统计卡片：主站浏览/访客 + Deno 平台用量
+  function refreshVisitStats(force: boolean, fresh: boolean) {
+    fetchStats('stats', force);
+    fetchDenoAnalytics(force, fresh);
+  }
+
+  // 加载与轮询共用：/api/stats 一份数据同时含两张卡片，只取一次
+  function refreshAll(force: boolean, fresh: boolean) {
+    NODES.forEach((svc) => checkNodeStatus(svc, force, fresh));
+    fetchStats('all', force);
+    fetchDenoAnalytics(force, fresh);
+  }
+
+  // 初始加载：本地缓存未过期则直接渲染，不发请求
+  refreshAll(false, false);
+  // 手动刷新：只重取各自卡片内的数据，本地与服务端缓存一起绕过，确保拿到真实的新读数
+  document.getElementById('refresh-btn-services')?.addEventListener('click', () => refreshServices(true, true));
+  document.getElementById('refresh-btn-stats')?.addEventListener('click', () => refreshVisitStats(true, true));
+
+  // 到期自动刷新：只绕过本地缓存（否则同频的 TTL 会让数据永不更新），
+  // 仍走服务端缓存，让同一实例上的多个访客共享一次出网探测
+  setInterval(() => refreshAll(true, false), CACHE_TTL.node);
 </script>

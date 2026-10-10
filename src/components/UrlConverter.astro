@@ -4,43 +4,54 @@
 
 <div class="url-converter">
   <!-- 输入区域 -->
-  <div class="bg-surface rounded-2xl p-4 mb-4 border border-outline-variant">
-    <label class="block text-sm font-medium text-on-surface-variant mb-2">
-      粘贴 GitHub 链接或 Docker 镜像名
-    </label>
+  <!-- backdrop-filter 让每张玻璃卡片各自成层叠上下文,需 relative z-10 才能压住 DOM 靠后的"转换结果"卡片 -->
+  <div class="relative z-10 bg-surface rounded-2xl p-4 mb-4 border border-outline-variant">
     <div class="flex gap-2">
-      <input 
-        type="text" 
-        id="url-input"
-        placeholder="例如: https://github.com/owner/repo/releases/download/v1.0/app.tar.gz"
-        class="flex-1 px-4 py-3 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:border-primary transition-colors"
-      />
+      <!-- group 让清除按钮能响应整个输入框的悬停,而不是只响应按钮自己 -->
+      <div class="relative flex-1 group">
+        <input 
+          type="text" 
+          id="url-input"
+          aria-label="待转换的源站链接"
+          placeholder="例如: https://github.com/owner/repo/releases/download/v1.0/app.tar.gz"
+          class="w-full px-4 py-3 pr-11 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:border-primary transition-colors"
+        />
+        <button 
+          type="button"
+          id="clear-input-btn"
+          aria-label="清除输入"
+          title="清除"
+          class="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-error opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity"
+        >
+          <span class="icon-[material-symbols--close-rounded] text-lg"></span>
+        </button>
+      </div>
       <!-- 自定义下拉菜单 -->
       <div class="relative">
         <button 
-          id="format-select-btn"
-          class="px-4 py-3 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:border-primary transition-colors flex items-center gap-2 min-w-[140px] justify-between"
+          id="format-select-btn" aria-haspopup="listbox"
+          class="h-full px-4 py-3 bg-surface-container-low border border-outline-variant rounded-xl text-sm text-on-surface focus:outline-none focus:border-primary transition-colors flex items-center gap-2 min-w-[140px] justify-between"
         >
           <span id="format-select-text">直接链接</span>
-          <span class="material-symbols-outlined text-lg">arrow_drop_down</span>
+          <span class="icon-[material-symbols--arrow-drop-down] text-lg"></span>
         </button>
         
         <!-- 下拉菜单 -->
-        <div id="format-select-menu" class="hidden absolute right-0 mt-2 bg-surface-container-highest rounded-2xl shadow-lg border border-outline-variant py-2 z-50 whitespace-nowrap">
-          <button class="format-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container-high transition-colors" data-value="direct">
-            <span class="material-symbols-outlined text-lg">link</span>
+        <div id="format-select-menu" class="hidden absolute right-0 mt-2 bg-surface-container-highest rounded-2xl overflow-hidden shadow-lg border border-outline-variant py-2 z-50 whitespace-nowrap">
+          <button class="format-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-primary/15 hover:text-primary transition-colors" data-value="direct">
+            <span class="icon-[material-symbols--link] text-lg"></span>
             <span>直接链接</span>
           </button>
-          <button class="format-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container-high transition-colors" data-value="git">
-            <span class="material-symbols-outlined text-lg">terminal</span>
+          <button class="format-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-primary/15 hover:text-primary transition-colors" data-value="git">
+            <span class="icon-[simple-icons--git] text-lg"></span>
             <span>Git Clone</span>
           </button>
-          <button class="format-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container-high transition-colors" data-value="wget">
-            <span class="material-symbols-outlined text-lg">download</span>
+          <button class="format-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-primary/15 hover:text-primary transition-colors" data-value="wget">
+            <span class="icon-[material-symbols--download] text-lg"></span>
             <span>Wget</span>
           </button>
-          <button class="format-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container-high transition-colors" data-value="docker">
-            <span class="material-symbols-outlined text-lg">dock</span>
+          <button class="format-option w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-primary/15 hover:text-primary transition-colors" data-value="docker">
+            <span class="icon-[simple-icons--docker] text-lg"></span>
             <span>Docker Pull</span>
           </button>
         </div>
@@ -61,6 +72,15 @@
       <button class="example-btn text-xs px-3 py-1.5 bg-surface-container-high rounded-full text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-example="library/nginx:latest">
         Docker 镜像
       </button>
+      <button class="example-btn text-xs px-3 py-1.5 bg-surface-container-high rounded-full text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-example="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js">
+        jsDelivr 资源
+      </button>
+      <button class="example-btn text-xs px-3 py-1.5 bg-surface-container-high rounded-full text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-example="https://repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2.pom">
+        Maven 构件
+      </button>
+      <button class="example-btn text-xs px-3 py-1.5 bg-surface-container-high rounded-full text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" data-example="https://pypi.org/simple/requests/">
+        PyPI 索引
+      </button>
     </div>
   </div>
 
@@ -70,11 +90,11 @@
       <div class="flex items-center justify-between px-4 py-3 bg-surface-container border-b border-outline-variant">
         <span class="text-sm font-medium text-on-surface">转换结果</span>
         <div class="flex gap-1">
-          <button id="copy-btn" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" title="复制">
-            <span class="material-symbols-outlined text-lg">content_copy</span>
+          <button id="copy-btn" aria-label="复制" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" title="复制">
+            <span class="icon-[material-symbols--content-copy] text-lg"></span>
           </button>
-          <button id="open-btn" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" title="在新窗口打开">
-            <span class="material-symbols-outlined text-lg">open_in_new</span>
+          <button id="open-btn" aria-label="在新窗口打开" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" title="在新窗口打开">
+            <span class="icon-[material-symbols--open-in-new] text-lg"></span>
           </button>
         </div>
       </div>
@@ -93,6 +113,8 @@
 </div>
 
 <script>
+  import { PREFIX_BY_HOST } from '../lib/services';
+
   const urlInput = document.getElementById('url-input');
   const formatSelectBtn = document.getElementById('format-select-btn');
   const formatSelectMenu = document.getElementById('format-select-menu');
@@ -105,6 +127,7 @@
   const errorMessage = document.getElementById('error-message');
   const copyBtn = document.getElementById('copy-btn');
   const openBtn = document.getElementById('open-btn');
+  const clearInputBtn = document.getElementById('clear-input-btn');
 
   const BASE = window.location.origin;
 
@@ -134,32 +157,13 @@
       const host = url.hostname;
       const path = url.pathname;
 
-      let proxyPath = '';
-
-      // GitHub
-      if (host === 'github.com') {
-        proxyPath = '/api/gh' + path;
-      }
-      // Raw 文件
-      else if (host === 'raw.githubusercontent.com') {
-        proxyPath = '/api/ghraw' + path;
-      }
-      // Codeload
-      else if (host === 'codeload.github.com') {
-        proxyPath = '/api/codeload' + path;
-      }
-      // Docker Hub
-      else if (host === 'docker.io' || host === 'registry-1.docker.io') {
-        proxyPath = '/v2' + path;
-      }
-      // GHCR
-      else if (host === 'ghcr.io') {
-        proxyPath = '/api/ghcr' + path;
-      }
-      // 其他不支持的域名
-      else {
+      // 域名 -> 前缀与上游注册表同源(src/lib/services)：新增加速服务只改注册表，转换器自动跟上
+      const prefix = PREFIX_BY_HOST[host] ?? PREFIX_BY_HOST[host.replace(/^www\./, '')];
+      if (!prefix) {
         return { error: `不支持的域名: ${host}` };
       }
+      // 保留查询串：avatars 的 ?v=4、PyPI 索引的 ?format= 都参与语义
+      const proxyPath = prefix + path + url.search;
 
       const fullUrl = BASE + proxyPath;
 
@@ -234,6 +238,11 @@
     }
   });
   
+  // 菜单当前项的标记:初始化也要打,否则默认项看不出选中
+  function markActiveFormat() {
+    formatOptions.forEach(opt => opt.classList.toggle('menu-active', opt.dataset.value === currentFormat));
+  }
+
   // 选项点击
   formatOptions.forEach(option => {
     option.addEventListener('click', () => {
@@ -241,8 +250,7 @@
       formatSelectText.textContent = option.querySelector('span:last-child').textContent;
       
       // 更新选中状态
-      formatOptions.forEach(opt => opt.classList.remove('bg-primary-container'));
-      option.classList.add('bg-primary-container');
+      markActiveFormat();
       
       formatSelectMenu?.classList.add('hidden');
       updateOutput();
@@ -257,14 +265,23 @@
     });
   });
 
+  // 清除输入
+  clearInputBtn?.addEventListener('click', () => {
+    urlInput.value = '';
+    // 清掉回填值,否则刷新后又会带出上次链接
+    localStorage.removeItem('lastUrl');
+    urlInput.focus();
+    updateOutput();
+  });
+
   // 复制功能
   copyBtn.addEventListener('click', async () => {
     const text = convertedUrl.textContent;
     try {
       await navigator.clipboard.writeText(text);
-      copyBtn.innerHTML = '<span class="material-symbols-outlined text-lg">check</span>';
+      copyBtn.innerHTML = '<span class="icon-[material-symbols--check] text-lg"></span>';
       setTimeout(() => {
-        copyBtn.innerHTML = '<span class="material-symbols-outlined text-lg">content_copy</span>';
+        copyBtn.innerHTML = '<span class="icon-[material-symbols--content-copy] text-lg"></span>';
       }, 2000);
     } catch (err) {
       console.error('复制失败:', err);
@@ -287,6 +304,10 @@
     if (lastFormat) currentFormat = lastFormat;
     updateOutput();
   }
+  // 首屏就把选中态和触发器文字对齐到实际格式
+  markActiveFormat();
+  const initialOption = Array.from(formatOptions).find(opt => opt.dataset.value === currentFormat);
+  if (initialOption) formatSelectText.textContent = initialOption.querySelector('span:last-child').textContent;
 </script>
 
 <style>

@@ -4,8 +4,15 @@
 const getEnv = (key: string): string => {
   // @ts-ignore
   if (typeof Deno !== 'undefined') {
-    // @ts-ignore
-    return Deno.env.get(key) || '';
+    try {
+      // @ts-ignore
+      return Deno.env.get(key) || '';
+    } catch {
+      // 无 env 权限时回退到其他来源
+    }
+  }
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key] || '';
   }
   // @ts-ignore
   return import.meta.env[key] || '';
@@ -14,6 +21,10 @@ const getEnv = (key: string): string => {
 export const CONFIG = {
   // 访问控制
   PROXY_PASSWORD: getEnv("PROXY_PASSWORD"),
+
+  // Docker Hub 私有仓库凭据（拉取时用于换取 token）
+  DOCKER_HUB_USERNAME: getEnv("DOCKER_HUB_USERNAME"),
+  DOCKER_HUB_PASSWORD: getEnv("DOCKER_HUB_PASSWORD"),
   
   // 白名单/黑名单（JSON 格式环境变量）
   // 例如: WHITE_LIST=["hotier/*","octocat/Hello-World"]

@@ -1,7 +1,11 @@
 // 增强的代理请求处理器（参考 hunshcn/gh-proxy）
 
 import { CONFIG, isWhitelisted, isBlacklisted, shouldUseJsDelivr, convertToJsDelivr } from "./config";
+import { PREFIX_BY_UPSTREAM, rewriteHostsOf } from "./services";
 import { jsonResponse, filterHeaders, copyHeaders } from "./helpers";
+
+// 正文改写需缓冲整个响应，给体积设上限，超限直接流式透传
+const TEXT_REWRITE_LIMIT = 32 * 1024 * 1024;
 
 // Hop-by-hop 头列表（参考 RFC 2616）
 const HOP_BY_HOP_HEADERS = [
@@ -25,7 +29,7 @@ function stripRequestHeaders(headers: Headers): Headers {
     }
   });
   // 设置 User-Agent（GitHub API 要求）
-  filtered.set("user-agent", "github-docker-proxy/1.0");
+  filtered.set("user-agent", "swiftorigin/1.0");
   return filtered;
 }
 
@@ -45,7 +49,7 @@ export async function proxyRequest(
   targetPath: string,
   search: string
 ): Promise<Response> {
-  const targetUrl = upstream + targetPath + search;
+  const targetUrl = `${upstream.replace(/\/+$/, "")}/${targetPath.replace(/^\/+/, "")}${search}`;
 
   try {
     // 1. 白名单检查
@@ -105,11 +109,34 @@ export async function proxyRequest(
     if ([301, 302, 307, 308].includes(resp.status)) {
       const location = resp.headers.get("location");
       if (location) {
-        const newLocation = rewriteLocation(location);
+        const newLocation = rewriteLocation(location, upstream);
         const newResp = new Response(null, { status: resp.status });
         newResp.headers.set("location", newLocation);
         copyHeaders(resp.headers, newResp.headers, ["location"]);
         return newResp;
+      }
+    }
+
+    // 6.5 正文改写(注册表 rewriteHosts 声明的上游)：把元数据/索引页里的绝对 URL 换成本代理前缀，
+    // 后续 tarball/wheel 下载即走加速通道；sha256、integrity 等校验值与 URL 无关，不受影响
+    const rewriteHosts = rewriteHostsOf(url.origin);
+    const contentType = resp.headers.get("content-type") || "";
+    if (rewriteHosts && resp.ok && /json|html/.test(contentType)) {
+      const encodedLen = parseInt(resp.headers.get("content-length") || "0");
+      if (!encodedLen || encodedLen <= TEXT_REWRITE_LIMIT) {
+        const proxyOrigin = new URL(req.url).origin;
+        let rewritten = await resp.text();
+        for (const host of rewriteHosts) {
+          const prefix = PREFIX_BY_UPSTREAM[host];
+          if (!prefix) continue;
+          // 先替换带斜杠的形式(host + path)，再把裸 host 换成不带尾斜杠的前缀，避免产生双斜杠
+          rewritten = rewritten.split(`${host}/`).join(proxyOrigin + prefix);
+          rewritten = rewritten.split(host).join(proxyOrigin + prefix.replace(/\/+$/, ""));
+        }
+        const textResp = new Response(rewritten, { status: resp.status });
+        copyHeaders(resp.headers, textResp.headers);
+        textResp.headers.set("Access-Control-Allow-Origin", "*");
+        return textResp;
       }
     }
 
@@ -173,8 +200,8 @@ export async function handleDockerProxy(
       if (service) tokenUrl.searchParams.set("service", service);
       if (scope) tokenUrl.searchParams.set("scope", scope);
       
-      const dockerUser = Deno.env.get("DOCKER_HUB_USERNAME");
-      const dockerPass = Deno.env.get("DOCKER_HUB_PASSWORD");
+      const dockerUser = CONFIG.DOCKER_HUB_USERNAME;
+      const dockerPass = CONFIG.DOCKER_HUB_PASSWORD;
       const tokenHeaders: HeadersInit = {};
       if (dockerUser && dockerPass) {
         tokenHeaders["authorization"] = "Basic " + btoa(`${dockerUser}:${dockerPass}`);
@@ -237,49 +264,26 @@ function rewriteDockerLocation(location: string): string {
       return "/v2/" + url.pathname.slice(4) + url.search;
     }
     
-    if (url.host === "auth.docker.io") {
-      return "/auth/" + url.pathname + url.search;
-    }
-    
     return location;
   } catch {
     return location;
   }
 }
 
-function rewriteLocation(location: string): string {
+function rewriteLocation(location: string, upstream: string): string {
   try {
-    const url = new URL(location);
-    
-    const UPSTREAMS: Record<string, string> = {
-      "/gh/": "https://github.com",
-      "/ghraw/": "https://raw.githubusercontent.com",
-      "/codeload/": "https://codeload.github.com",
-      "/objects/": "https://objects.githubusercontent.com",
-      "/release-assets/": "https://release-assets.githubusercontent.com",
-      "/api.github.com/": "https://api.github.com",
-      "/avatars/": "https://avatars.githubusercontent.com",
-      "/ghcr/": "https://ghcr.io",
-      "/gcr/": "https://gcr.io",
-      "/k8s/": "https://registry.k8s.io",
-      "/quay/": "https://quay.io",
-      "/docker.io/": "https://registry-1.docker.io",
-    };
-    
-    for (const [prefix, upstream] of Object.entries(UPSTREAMS)) {
-      if (url.origin === upstream) {
-        return prefix + url.pathname + url.search;
+    // 相对 Location（unpkg 的版本解析 302 只给 /mime@4.1.0/...）必须按上游解析，
+    // 否则浏览器把它拼到本代理根路径，下一跳直接 404
+    const url = new URL(location, upstream.replace(/\/+$/, '') + '/');
+
+    // 上游 origin -> 本代理前缀，映射与路由同源(src/lib/services)，避免两边前缀漂移导致重写后 404
+    for (const [origin, prefix] of Object.entries(PREFIX_BY_UPSTREAM)) {
+      if (url.origin === origin) {
+        // 前缀自带尾斜杠、pathname 自带首斜杠，去其一避免产生 // 路径
+        return `${prefix.replace(/\/+$/, '')}${url.pathname}${url.search}`;
       }
     }
-    
-    if (url.host === "objects.githubusercontent.com") {
-      return "/objects/" + url.pathname + url.search;
-    }
-    
-    if (url.host === "release-assets.githubusercontent.com") {
-      return "/release-assets/" + url.pathname + url.search;
-    }
-    
+
     return location;
   } catch {
     return location;

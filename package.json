@@ -1,14 +1,18 @@
 {
-  "name": "frontend",
+  "name": "swiftorigin",
   "type": "module",
   "version": "0.0.1",
+  "description": "迅源 SwiftOrigin - GitHub / Docker / 包管理器边缘加速代理",
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
     "deploy": "npm run build && deno deploy --org hotier --app github-docker-proxy --prod",
     "preview": "astro preview",
-    "dev": "astro dev",
+    "dev": "node --env-file-if-exists=.env node_modules/astro/bin/astro.mjs dev",
+    "icons": "node scripts/build-icons.mjs",
+    "check": "astro check",
+    "test": "node --env-file-if-exists=.env --experimental-strip-types --test tests/e2e.test.ts tests/stats.test.ts",
     "build:css": "tailwindcss -i ./src/styles/global.css -o ./dist/styles.css --minify",
     "build": "astro build && npm run build:css"
   },
@@ -19,12 +23,14 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "astro": "^7.3.8",
-    "better-sqlite3": "^13.0.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
     "@tailwindcss/cli": "^4.3.3",
-    "tailwindcss": "^4.3.3"
+    "@types/node": "^26.6.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3"
   }
 }

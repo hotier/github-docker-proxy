@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+    <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#00303D" />
+            <stop offset="1" stop-color="#006780" />
+        </linearGradient>
+        <radialGradient id="glow1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1080 40) scale(520)">
+            <stop offset="0" stop-color="#62D4FF" stop-opacity=".38" />
+            <stop offset="1" stop-color="#62D4FF" stop-opacity="0" />
+        </radialGradient>
+        <radialGradient id="glow2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(120 620) scale(460)">
+            <stop offset="0" stop-color="#2EC49A" stop-opacity=".3" />
+            <stop offset="1" stop-color="#2EC49A" stop-opacity="0" />
+        </radialGradient>
+        <linearGradient id="plate" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#00A6CE" />
+            <stop offset="1" stop-color="#00495C" />
+        </linearGradient>
+    </defs>
+
+    <rect width="1200" height="630" fill="url(#bg)" />
+    <rect width="1200" height="630" fill="url(#glow1)" />
+    <rect width="1200" height="630" fill="url(#glow2)" />
+
+    <!-- 标识 -->
+    <g transform="translate(72 68)">
+        <rect width="104" height="104" rx="24" fill="url(#plate)" />
+        <g transform="translate(8 21.7) scale(0.8)">
+            <g transform="translate(-6 4)">
+                <path d="M90.87 90.87A38 38 0 1 1 54.17 27.3" stroke="#fff" stroke-width="15" stroke-linecap="round" opacity=".5" fill="none" />
+                <path d="M40 82L88 54" stroke="#fff" stroke-width="18" stroke-linecap="round" fill="none" />
+                <path d="M114 40L100.3 68.4L82.5 37.2Z" fill="#fff" />
+            </g>
+        </g>
+    </g>
+
+    <text x="200" y="128" font-family="Microsoft YaHei, PingFang SC, Noto Sans SC, sans-serif" font-size="62" font-weight="700" fill="#FFFFFF">迅源</text>
+    <text x="360" y="124" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="7" fill="#7FDCFF">SWIFTORIGIN</text>
+
+    <text x="72" y="228" font-family="Microsoft YaHei, PingFang SC, Noto Sans SC, sans-serif" font-size="38" font-weight="600" fill="#FFFFFF">加速一切开发资源的取用路径</text>
+    <text x="72" y="278" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="24" letter-spacing="1" fill="#FFFFFF" fill-opacity=".62">GitHub · Docker · npm · Go · jsDelivr · unpkg · Maven · PyPI</text>
+
+    <!-- 路径改写母题 -->
+    <g transform="translate(72 330)">
+        <rect width="1056" height="200" rx="28" fill="#FFFFFF" fill-opacity=".07" stroke="#FFFFFF" stroke-opacity=".18" />
+        <text x="40" y="62" font-family="Microsoft YaHei, PingFang SC, sans-serif" font-size="22" fill="#FFFFFF" fill-opacity=".5">源站</text>
+        <text x="112" y="62" font-family="Cascadia Mono, Consolas, monospace" font-size="26" fill="#FFFFFF" fill-opacity=".72">github.com/torvalds/linux/archive/v6.9.tar.gz</text>
+        <path d="M60 84L60 116" stroke="#7FDCFF" stroke-width="4" stroke-linecap="round" opacity=".7" />
+        <path d="M74 108L60 126L46 108Z" fill="#7FDCFF" opacity=".7" />
+        <text x="40" y="164" font-family="Microsoft YaHei, PingFang SC, sans-serif" font-size="22" fill="#7FDCFF">迅源</text>
+        <text x="112" y="164" font-family="Cascadia Mono, Consolas, monospace" font-size="26" fill="#7FDCFF">swiftorigin.dev/api/gh/torvalds/linux/archive/v6.9.tar.gz</text>
+    </g>
+
+    <text x="1128" y="586" text-anchor="end" font-family="Segoe UI, Roboto, sans-serif" font-size="22" letter-spacing="2" fill="#FFFFFF" fill-opacity=".45">DENO DEPLOY EDGE NETWORK</text>
+</svg>
