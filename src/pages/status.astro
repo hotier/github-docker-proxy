@@ -431,8 +431,8 @@ const services = [
       }
     } else {
       if (note) {
-        note.textContent = data.error === 'DENO_API_TOKEN is not configured'
-          ? '未配置 DENO_API_TOKEN 环境变量，平台用量数据不可用'
+        note.textContent = data.error === 'DEPLOY_ANALYTICS_TOKEN is not configured'
+          ? '未配置 DEPLOY_ANALYTICS_TOKEN 环境变量，平台用量数据不可用'
           : '平台用量数据获取失败：' + (data.error || '未知错误');
         note.classList.remove('hidden');
       }

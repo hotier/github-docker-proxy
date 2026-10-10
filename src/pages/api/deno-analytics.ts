@@ -3,7 +3,8 @@ import { withLogging } from '../../lib/logging';
 import { jsonResponse } from '../../lib/helpers';
 import { cachedJson } from '../../lib/probe';
 
-const DENO_API_TOKEN = process.env.DENO_API_TOKEN;
+// 平台禁止自定义 DENO_ 前缀变量名，线上用 DEPLOY_ANALYTICS_TOKEN；本地 .env 沿用 DENO_API_TOKEN 保底
+const DENO_API_TOKEN = process.env.DEPLOY_ANALYTICS_TOKEN || process.env.DENO_API_TOKEN;
 const APP_NAME = 'github-docker-proxy';
 
 // Deno Analytics 本身是 15 分钟粒度，服务端缓存 5 分钟足够，且免去每个访客一次外部 API 调用
@@ -95,7 +96,7 @@ export const GET: APIRoute = async ({ request }) => {
   return withLogging(request, async () => {
     // 配置缺失直接返回，不占用缓存
     if (!DENO_API_TOKEN) {
-      return jsonResponse({ success: false, error: 'DENO_API_TOKEN is not configured' }, 503);
+      return jsonResponse({ success: false, error: 'DEPLOY_ANALYTICS_TOKEN is not configured' }, 503);
     }
 
     try {

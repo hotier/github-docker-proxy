@@ -102,7 +102,7 @@ better-icons get simple-icons:docker    # 查看 SVG
 | `USE_JSDELIVR` | `true` 时小体积 raw/blob 文件改走 jsDelivr | `false` |
 | `RATE_LIMIT` | 每 IP 每分钟代理请求上限，`0` 不限制 | `0` |
 | `CACHE_RELEASE` | `false` 关闭 Release 的强缓存头 | `true` |
-| `DENO_API_TOKEN` | 用于 `/api/deno-analytics` 读取 Deno Deploy 用量；不配置该端点返回 503 | 未配置 |
+| `DEPLOY_ANALYTICS_TOKEN` | 用于 `/api/deno-analytics` 读取 Deno Deploy 用量（平台禁止 `DENO_` 前缀变量名，本地开发可回退 `DENO_API_TOKEN`）；不配置该端点返回 503 | 未配置 |
 | `STATS_RETENTION_DAYS` | 按天存档的保留天数，超期的日桶会被清扫 | `180` |
 | `STATS_FLUSH_REQUESTS` | 进程内缓冲多少条请求后落库 | `200` |
 | `STATS_FLUSH_INTERVAL_MS` | 低流量时兜底落库间隔（毫秒） | `120000` |
@@ -259,7 +259,7 @@ simple 索引（HTML 与 JSON）与包 JSON 中内嵌的 `files.pythonhosted.org
 | `/api/stats/history?days=30` | 按天存档回看，保留期内可查，超出 `STATS_RETENTION_DAYS` 自动裁剪 |
 | `/api/status/github`、`/api/status/docker` | 上游连通性探测（结果按实例缓存 30 秒） |
 | `/api/status/{npm,go,jsd,unpkg,maven,mcr,pypi}` | 其余上游连通性探测（动态路由） |
-| `/api/deno-analytics` | Deno Deploy 用量（需 `DENO_API_TOKEN`，按实例缓存 5 分钟） |
+| `/api/deno-analytics` | Deno Deploy 用量（需 `DEPLOY_ANALYTICS_TOKEN`，按实例缓存 5 分钟） |
 
 ## 项目结构
 

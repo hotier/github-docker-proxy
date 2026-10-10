@@ -115,9 +115,9 @@ describe('健康与观测端点', () => {
     );
   });
 
-  it('未配置 DENO_API_TOKEN 时平台用量端点明确不可用', async () => {
+  it('未配置分析 token 时平台用量端点明确不可用', async () => {
     const resp = await fetch(`${BASE_URL}/api/deno-analytics`);
-    if (!process.env.DENO_API_TOKEN) {
+    if (!process.env.DEPLOY_ANALYTICS_TOKEN && !process.env.DENO_API_TOKEN) {
       assert.equal(resp.status, 503);
       assert.equal((await resp.json()).success, false);
     } else {
